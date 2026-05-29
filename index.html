@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="color-scheme" content="light only">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>전도축제 · 시작 페이지</title>
+<script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+<style>
+  :root{color-scheme:light only; --paper:#fbf3e4; --ink:#2b1d12; --tomato:#e8552d; --tangerine:#f2a516; --leaf:#4c7a34; --card:#fffaf0; --line:#e6d6ba; --shadow:rgba(70,40,10,.18); --muted:#8a7150;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  body{font-family:"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+    background-color:#fbf3e4;
+    background-image:radial-gradient(circle at 12% 8%, rgba(242,165,22,.14), transparent 40%),radial-gradient(circle at 88% 92%, rgba(232,85,45,.12), transparent 44%);
+    color:var(--ink);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 18px;}
+  .kicker{font-size:13px;letter-spacing:3px;color:var(--tomato);font-weight:800;text-align:center;}
+  h1{font-size:clamp(26px,5vw,40px);font-weight:900;letter-spacing:-1px;margin-top:10px;text-align:center;}
+  .sub{color:#6f5942;margin-top:10px;font-size:15px;text-align:center;line-height:1.6;}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:30px;width:min(880px,100%);}
+  .card{background:var(--card);border:2px solid var(--line);border-radius:22px;padding:26px;box-shadow:0 10px 26px var(--shadow);display:flex;flex-direction:column;align-items:center;text-align:center;}
+  .card .ic{font-size:46px;}
+  .card h2{font-size:21px;font-weight:900;margin-top:12px;}
+  .card p{font-size:13.5px;color:#8a7150;margin-top:8px;line-height:1.55;min-height:38px;}
+  .btn{display:inline-flex;align-items:center;justify-content:center;background:var(--tomato);color:#fff;border:none;cursor:pointer;
+    padding:14px 26px;border-radius:14px;font-weight:900;font-size:16px;box-shadow:0 4px 0 #b8401f;margin-top:16px;text-decoration:none;}
+  .btn:active{transform:translateY(3px);box-shadow:0 1px 0 #b8401f;}
+  .btn.amber{background:var(--tangerine);color:#3a2604;box-shadow:0 4px 0 #c9890c;}
+  #qrbox{margin-top:16px;background:#fff;padding:14px;border-radius:14px;border:2px solid var(--line);}
+  #qrbox img,#qrbox canvas{display:block;}
+  .qrurl{font-size:11px;color:#9c845f;margin-top:8px;word-break:break-all;max-width:240px;}
+  .note{margin-top:26px;background:#fff4dc;border:1.5px solid #f0d79a;color:#8a5a12;border-radius:14px;padding:14px 18px;font-size:13px;font-weight:700;line-height:1.6;max-width:760px;text-align:center;}
+  .foot{margin-top:18px;font-size:12px;color:#9c845f;}
+</style>
+</head>
+<body>
+  <div class="kicker">2026 청년부 전도축제 · BREAK THE ICE</div>
+  <h1>전도축제 시작 페이지 🎉</h1>
+  <p class="sub">운영자는 왼쪽, 참가자(조원)는 오른쪽 QR로 들어가세요.</p>
+
+  <div class="cards">
+    <div class="card">
+      <div class="ic">🎛️</div>
+      <h2>운영자 콘솔 (강당 화면)</h2>
+      <p>노트북을 빔에 연결해 진행하는 화면.<br>4개 코너·점수판·최종 발표.</p>
+      <a class="btn" href="운영자콘솔_강당화면.html">운영자 콘솔 열기</a>
+    </div>
+    <div class="card">
+      <div class="ic">📱</div>
+      <h2>조원 폰 제출 (3부 요리)</h2>
+      <p>조원들이 폰으로 힌트를 보고<br>정답을 제출하는 페이지. 아래 QR을 강당에 띄워 스캔하게 하세요.</p>
+      <div id="qrbox"></div>
+      <div class="qrurl" id="qrurl"></div>
+      <a class="btn amber" href="3부_요리맞추기_폰힌트.html">폰 페이지 직접 열기</a>
+    </div>
+  </div>
+
+  <div class="note">💡 처음이라면 <b>README_먼저읽기.md</b> 를 먼저 보세요. 실시간 제출(3부)을 쓰려면 <b>firebase-config.js</b> 에 Firebase 설정을 넣고, 인터넷이 되는 곳에서 진행해야 해요.</div>
+  <div class="foot">파일을 그대로 열어도 되지만, Netlify 등에 올리면 짧은 링크/QR로 나눠주기 편해요.</div>
+
+<script>
+  // 폰 제출 페이지의 절대 URL을 만들어 QR + 링크로 표시
+  var phoneUrl = new URL('3부_요리맞추기_폰힌트.html', location.href).href;
+  document.getElementById('qrurl').textContent = phoneUrl;
+  try{
+    new QRCode(document.getElementById('qrbox'), { text: phoneUrl, width: 200, height: 200,
+      colorDark:'#2b1d12', colorLight:'#ffffff', correctLevel: QRCode.CorrectLevel.M });
+  }catch(e){
+    document.getElementById('qrbox').innerHTML = '<div style="font-size:12px;color:#c0392b;padding:20px;width:200px">QR 생성 실패<br>(인터넷 연결 후 새로고침)</div>';
+  }
+  // file:// 로 직접 열면 QR이 file 경로라 폰에서 못 열려요 — 안내
+  if(location.protocol === 'file:'){
+    document.getElementById('qrurl').insertAdjacentHTML('afterend',
+      '<div style="font-size:11px;color:#c0392b;margin-top:6px;max-width:240px">⚠️ 파일을 직접 연 상태예요. QR은 호스팅(Netlify 등)에 올린 뒤 써야 폰에서 열려요.</div>');
+  }
+</script>
+</body>
+</html>

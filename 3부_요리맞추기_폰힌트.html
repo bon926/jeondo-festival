@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="color-scheme" content="light only">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>이 요리는 뭘까? — 조별 제출</title>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script><!-- ★ Firebase 설정은 firebase-config.js 한 곳에만 넣으면 콘솔·폰 둘 다 적용 -->
+<style>
+  :root{ color-scheme:light only;
+    --paper:#fbf3e4; --ink:#2b1d12; --tomato:#e8552d; --tangerine:#f2a516;
+    --leaf:#4c7a34; --card:#fffaf0; --line:#e6d6ba; --shadow:rgba(70,40,10,.18); --muted:#8a7150; }
+  html{color-scheme:light only;}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{font-family:"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;
+    background-color:#fbf3e4;
+    background-image:radial-gradient(circle at 18% 12%, rgba(242,165,22,.16), transparent 42%),radial-gradient(circle at 85% 88%, rgba(232,85,45,.14), transparent 46%);
+    color:var(--ink);min-height:100%;display:flex;flex-direction:column;overflow-x:hidden;-webkit-text-size-adjust:100%;}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.04;background-image:radial-gradient(var(--ink) .5px,transparent .5px);background-size:7px 7px;}
+  .wrap{flex:1;display:flex;flex-direction:column;padding:18px 18px 24px;position:relative;z-index:1;}
+  .scr{display:none;flex:1;flex-direction:column;}
+  .scr.on{display:flex;}
+
+  .brand{text-align:center;margin:10px 0 18px;}
+  .brand .kicker{font-size:13px;letter-spacing:3px;color:var(--tomato);font-weight:800;}
+  .brand h1{font-size:28px;line-height:1.2;margin-top:8px;font-weight:900;letter-spacing:-1px;}
+  .brand p{margin-top:12px;font-size:14px;color:#6f5942;line-height:1.6;}
+  .brand b{color:var(--tomato);}
+  .step-q{text-align:center;font-size:15px;font-weight:800;margin:4px 0 14px;color:#5b4327;}
+
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+  .opt{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:17px 10px;text-align:center;cursor:pointer;box-shadow:0 4px 0 var(--line);transition:transform .08s,box-shadow .08s;font-weight:800;font-size:16px;}
+  .opt:active{transform:translateY(3px);box-shadow:0 1px 0 var(--line);}
+  .opt .ic{font-size:28px;display:block;line-height:1.1;}
+  .opt .nm{font-size:14.5px;margin-top:7px;}
+  .opt .no{font-size:11px;color:#a08a6a;margin-top:3px;font-weight:700;letter-spacing:1px;}
+  .teamcol{grid-template-columns:1fr;}
+  .teamcol .opt{padding:16px;font-size:18px;}
+
+  .conn{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:800;color:#a08a6a;justify-content:center;margin-top:14px;}
+  .conn .dot{width:8px;height:8px;border-radius:50%;background:#c9b48d;}
+  .conn.ok .dot{background:var(--leaf);} .conn.ok{color:var(--leaf);}
+
+  /* game */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .myslot{display:flex;align-items:center;gap:7px;background:var(--ink);color:var(--paper);padding:8px 13px;border-radius:30px;font-weight:800;font-size:12.5px;}
+  .myteam{background:var(--tomato);color:#fff;padding:8px 13px;border-radius:30px;font-weight:900;font-size:12.5px;}
+  .change{background:var(--card);border:1.5px solid var(--line);color:#8a7150;padding:8px 11px;border-radius:30px;font-size:12px;font-weight:800;cursor:pointer;}
+
+  .round-line{text-align:center;margin:16px 0 8px;}
+  .round-line .lbl{font-size:12px;letter-spacing:3px;color:var(--tomato);font-weight:800;}
+  .round-line .big{font-size:30px;font-weight:900;letter-spacing:-1px;line-height:1.1;}
+  .pchip{display:inline-block;background:var(--tangerine);color:#3a2604;font-size:12px;font-weight:900;padding:3px 10px;border-radius:20px;letter-spacing:1px;}
+
+  .card{flex:1;background:var(--card);border:2px solid var(--line);border-radius:22px;padding:20px;display:flex;flex-direction:column;box-shadow:0 10px 24px var(--shadow);position:relative;overflow:hidden;animation:pop .28s ease;min-height:34vh;}
+  @keyframes pop{from{opacity:0;transform:scale(.97) translateY(8px);}to{opacity:1;transform:none;}}
+  .card .tag{align-self:flex-start;background:var(--tangerine);color:#3a2604;font-weight:900;font-size:12px;letter-spacing:1px;padding:6px 12px;border-radius:20px;}
+  .hint-area{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:12px 4px;}
+  .h-emoji{font-size:60px;line-height:1.35;letter-spacing:8px;}
+  .h-word{font-size:38px;font-weight:900;letter-spacing:-1px;color:var(--tomato);line-height:1.1;}
+  .h-word .sub{display:block;font-size:17px;color:#8a7150;font-weight:800;margin-top:9px;}
+  .h-text{font-size:21px;font-weight:800;line-height:1.55;}
+  .h-list{list-style:none;display:flex;flex-direction:column;gap:11px;width:100%;max-width:280px;}
+  .h-list li{background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:13px;font-size:18px;font-weight:800;}
+
+  /* submit */
+  .submit{margin-top:14px;display:flex;gap:8px;}
+  .submit input{flex:1;border:2px solid var(--line);border-radius:14px;padding:14px;font-size:17px;font-weight:800;background:var(--card);color:var(--ink);}
+  .submit input:focus{outline:none;border-color:var(--tangerine);}
+  .submit button{background:var(--tomato);color:#fff;border:none;border-radius:14px;padding:0 22px;font-weight:900;font-size:16px;cursor:pointer;box-shadow:0 4px 0 #b8401f;}
+  .submit button:active{transform:translateY(3px);box-shadow:0 1px 0 #b8401f;}
+  .sub-state{margin-top:10px;text-align:center;font-size:14px;font-weight:800;color:var(--leaf);min-height:20px;}
+  .sub-state b{color:var(--ink);}
+  .footer-note{margin-top:12px;text-align:center;font-size:12px;color:#9c845f;line-height:1.55;font-weight:600;}
+  .footer-note b{color:var(--tomato);}
+
+  .notice{flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;}
+  .notice .box{background:var(--card);border:2px solid var(--line);border-radius:18px;padding:24px;}
+  .notice h2{font-size:20px;font-weight:900;color:var(--tomato);}
+  .notice p{margin-top:12px;font-size:14px;color:#6f5942;line-height:1.7;}
+  .notice code{background:#efe2c8;padding:2px 6px;border-radius:6px;font-size:12px;}
+  .offbar{display:none;background:#c0392b;color:#fff;text-align:center;padding:9px;font-weight:800;font-size:13px;border-radius:12px;margin-bottom:10px;}
+  .ptoast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 20px;border-radius:30px;font-weight:800;font-size:14px;z-index:200;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;}
+  .ptoast.on{opacity:1;transform:translateX(-50%) translateY(-4px);}
+  .sub-state.err{color:#c0392b;}
+  .backlink{align-self:flex-start;background:var(--card);border:1.5px solid var(--line);color:#8a7150;padding:8px 13px;border-radius:30px;font-size:12.5px;font-weight:800;cursor:pointer;margin-bottom:10px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="offbar" id="offBanner">⚠️ 연결이 끊겼어요 — 인터넷(와이파이/데이터)을 확인해 주세요</div>
+
+  <!-- 설정 필요 -->
+  <section class="scr" id="notice">
+    <div class="notice"><div class="box">
+      <h2>아직 준비 중이에요 🙏</h2>
+      <p>잠시 후 다시 열어보거나, 가까운 <b>진행자(운영자)</b>에게 문의해 주세요.</p>
+      <p style="font-size:12px;color:#a08a6a;margin-top:14px">운영자 안내 — 이 파일의 <code>FIREBASE_CONFIG</code> 값을 운영자 콘솔과 <b>똑같이</b> 넣으면 실시간 제출이 켜져요.</p>
+    </div></div>
+  </section>
+
+  <!-- 조 선택 -->
+  <section class="scr" id="pickTeam">
+    <div class="brand">
+      <div class="kicker">청년부 전도축제 · 3부</div>
+      <h1>이 요리는<br>뭘까요? 🍽️</h1>
+      <p>우리 조 폰들에 힌트가 <b>조각조각</b> 흩어져요.<br>서로 보여주며 의논하고, <b>조 대표가 정답을 제출</b>해요!</p>
+    </div>
+    <div class="step-q">① 우리 조를 골라주세요</div>
+    <div class="opts teamcol" id="teamGrid"></div>
+    <div class="conn" id="conn1"><span class="dot"></span><span>연결 중…</span></div>
+  </section>
+
+  <!-- 슬롯 선택 -->
+  <section class="scr" id="pickSlot">
+    <button class="backlink" id="slotBack">‹ 조 다시 고르기</button>
+    <div class="brand" style="margin-bottom:10px">
+      <div class="kicker" id="slotTeamLbl">○조</div>
+      <h1 style="font-size:24px">내 힌트 정하기 🧩</h1>
+      <p style="font-size:13px">조원끼리 1~6번을 겹치지 않게 나눠 맡아요</p>
+    </div>
+    <div class="step-q">② 나는 몇 번 힌트?</div>
+    <div class="opts" id="slotGrid"></div>
+    <div class="conn" id="conn2" style="margin-top:12px"><span class="dot"></span><span>연결 확인 중…</span></div>
+  </section>
+
+  <!-- 게임 -->
+  <section class="scr" id="game">
+    <div class="topbar">
+      <span class="myteam" id="gTeam">○조</span>
+      <span class="myslot" id="gSlot">🧺 재료</span>
+      <button class="change" id="changeBtn">변경</button>
+    </div>
+
+    <div class="round-line">
+      <div class="lbl" id="rLbl">ROUND</div>
+      <div class="big" id="rBig">—</div>
+    </div>
+
+    <div class="card">
+      <span class="tag" id="cardTag">내 힌트</span>
+      <div class="hint-area" id="hintArea"></div>
+    </div>
+
+    <div class="submit">
+      <input id="ansInput" placeholder="우리 조 정답 입력" autocomplete="off">
+      <button id="ansBtn">제출</button>
+    </div>
+    <div class="sub-state" id="subState"></div>
+    <div class="footer-note">제출은 <b>조에 하나</b>예요(누가 내든 같은 칸). 다시 내면 덮어써요.<br>운영자가 라운드를 넘기면 화면이 <b>자동으로</b> 바뀌어요.</div>
+  </section>
+
+  <div class="ptoast" id="ptoast"></div>
+
+</div>
+
+<script>
+/* ============================================================
+   Firebase 설정은 같은 폴더의 firebase-config.js 한 곳에만 넣으면 돼요.
+   (아래는 그 파일이 없을 때를 위한 안전 기본값 — 보통 건드릴 필요 없음)
+============================================================ */
+const FIREBASE_CONFIG = (typeof window!=='undefined' && window.FIREBASE_CONFIG) ? window.FIREBASE_CONFIG : {
+  apiKey: "여기에-붙여넣기",
+  authDomain: "여기에-붙여넣기",
+  databaseURL: "여기에-붙여넣기",
+  projectId: "여기에-붙여넣기",
+  appId: "여기에-붙여넣기"
+};
+
+const SLOTS=[
+  {key:"ingredients",ic:"🧺",nm:"재료"},{key:"emoji",ic:"😀",nm:"이모지"},{key:"word",ic:"💬",nm:"낱말"},
+  {key:"origin",ic:"🌍",nm:"유래"},{key:"look",ic:"👀",nm:"모양·색"},{key:"scene",ic:"🗣️",nm:"상황"},
+];
+/* 답·코드는 폰에 두지 않음(채점은 운영자 콘솔에서). 라운드 순서는 콘솔과 동일 */
+const ROUNDS=[
+  {practice:true, ingredients:["꼬불꼬불 면","분말 스프","건더기·달걀"],emoji:"🍜🔥🥚",word:"후루룩",wordSub:"야식의 왕",origin:"간편 조리 면 요리 · 한국인 소울푸드",look:"꼬불꼬불 노란 면에 빨간 국물",scene:"4분만 기다리면 완성되는 그것"},
+  {ingredients:["묵은지(신김치)","돼지고기","두부","대파"],emoji:"🔥🐷🥬🍲",word:"얼큰",wordSub:"국물 요리",origin:"대한민국 · 집집마다 레시피가 다름",look:"새빨간 국물이 보글보글, 건더기가 가득",scene:"밥 한 공기 뚝딱! 자취생 단골 메뉴"},
+  {ingredients:["두반장·화자오","고른 채소·버섯","면·고기","마라 소스"],emoji:"🌶️🥢🧮🍲",word:"얼얼",wordSub:"골라 담기",origin:"중국 쓰촨 · 요즘 청년들 사이 대유행",look:"빨갛고 기름진 국물, 재료를 직접 골라 담음",scene:"맵기 단계 고르고, 무게로 계산하는 그곳"},
+  {ingredients:["가래떡","어묵","고추장 양념","대파"],emoji:"🌶️🍢🟧🍡",word:"쫄깃",wordSub:"분식의 왕",origin:"대한민국 · 포장마차·분식집 대표 메뉴",look:"빨간 양념을 두른 길쭉하고 통통한 떡",scene:"학교 끝나고 친구랑 분식집에서"},
+  {ingredients:["식초 밥","신선한 생선회","와사비"],emoji:"🍚🐟🟢🥢",word:"한입",wordSub:"날 것의 미학",origin:"일본 · 회전 접시로도 유명",look:"흰 밥 위에 붉은빛 생선 한 점, 딱 한입 크기",scene:"접시 색깔로 가격이 정해지기도 하는 그것"},
+  {ingredients:["햄·소시지","라면 사리","김치","베이크드빈"],emoji:"🥫🌭🍜🪖",word:"사리 추가",wordSub:"이름이 힌트",origin:"한국전쟁 이후 미군 부대 주변에서 탄생",look:"빨간 국물에 햄·소시지·라면이 가득",scene:"이름에 '군대'가 떠오르는 단어가 들어감"},
+  {ingredients:["스파게티 면","베이컨","달걀 노른자","치즈·후추"],emoji:"🍝🥓🧀🥚",word:"느끼",wordSub:"꼬불 아닌 긴 면",origin:"이탈리아 로마 · 양식당 단골",look:"노르스름한 크림빛 면에 후추가 솔솔",scene:"느끼한데 자꾸 또 생각나는 그 면 요리"},
+  {ingredients:["돼지 뱃살","상추·깻잎","쌈장·마늘"],emoji:"🐷🔥🥬🧄",word:"지글지글",wordSub:"쌈 싸 먹기",origin:"대한민국 · 온 가족·친구 모임의 단골 고기",look:"불판 위에서 기름이 좔좔, 노릇하게 구워짐",scene:"다 같이 불판에 둘러앉아 구워 먹는 그것"},
+  {ingredients:["곱게 간 얼음","팥","연유","떡·과일"],emoji:"🧊🫘🥛❄️",word:"시원",wordSub:"여름 디저트",origin:"대한민국 · 여름 대표 디저트",look:"산처럼 쌓인 얼음 위에 팥과 연유",scene:"더운 날 둘이 숟가락 들고 나눠 먹는 것"},
+];
+function realNum(i){let n=0;for(let k=0;k<=i;k++)if(!ROUNDS[k].practice)n++;return n;}
+function realTotal(){return ROUNDS.filter(r=>!r.practice).length;}
+
+let db=null, fbOK=false;
+try{ if(FIREBASE_CONFIG.databaseURL && FIREBASE_CONFIG.databaseURL.indexOf('여기에')<0){ firebase.initializeApp(FIREBASE_CONFIG); db=firebase.database(); fbOK=true; } }catch(e){ fbOK=false; }
+
+let teams=[], myTeam=null, mySlot=null, round=0, subRef=null;
+
+function show(id){ document.querySelectorAll('.scr').forEach(s=>s.classList.toggle('on',s.id===id)); }
+function ptoast(m){ const t=document.getElementById('ptoast'); if(!t)return; t.textContent=m; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),1800); }
+function setConn(ok){ ['conn1','conn2'].forEach(id=>{ const el=document.getElementById(id); if(!el)return;
+    el.classList.toggle('ok',ok); el.querySelector('span:last-child').textContent=ok?'실시간 연결됨':'연결 끊김 — 인터넷 확인'; });
+  const b=document.getElementById('offBanner'); if(b) b.style.display=ok?'none':'block'; }
+
+let prevRound=null;
+if(!fbOK){ show('notice'); }
+else{
+  show('pickTeam');
+  db.ref('.info/connected').on('value', s=>setConn(s.val()===true));
+  db.ref('round').on('value', s=>{ const nr=(s.val()==null?0:s.val()); const changed=(prevRound!==null && nr!==prevRound); round=nr; prevRound=nr;
+    if(document.getElementById('game').classList.contains('on')){ enterRound(); if(changed) ptoast('다음 라운드로 넘어갔어요!'); } });
+  db.ref('teams').on('value', s=>{ teams = s.val()||[]; renderTeams(); });
+}
+document.getElementById('slotBack').onclick=()=>show('pickTeam');
+
+function renderTeams(){
+  const g=document.getElementById('teamGrid'); g.innerHTML='';
+  if(!teams.length){ g.innerHTML='<div class="footer-note">운영자가 조를 설정하면 여기 나타나요…</div>'; return; }
+  teams.forEach((t,i)=>{ const b=document.createElement('div'); b.className='opt'; b.textContent=t; b.onclick=()=>{ myTeam=i; document.getElementById('slotTeamLbl').textContent=t; renderSlots(); show('pickSlot'); }; g.appendChild(b); });
+}
+function renderSlots(){
+  const g=document.getElementById('slotGrid'); g.innerHTML='';
+  SLOTS.forEach((s,i)=>{ const b=document.createElement('div'); b.className='opt'; b.innerHTML=`<span class="ic">${s.ic}</span><span class="nm">${s.nm} 힌트</span><span class="no">${i+1}번</span>`; b.onclick=()=>{ mySlot=i; startGame(); }; g.appendChild(b); });
+}
+function startGame(){
+  document.getElementById('gTeam').textContent=teams[myTeam];
+  document.getElementById('gSlot').textContent=`${SLOTS[mySlot].ic} ${SLOTS[mySlot].nm}`;
+  show('game'); enterRound();
+}
+document.getElementById('changeBtn').onclick=()=>{ if(subRef){subRef.off();subRef=null;} show('pickTeam'); };
+
+function enterRound(){
+  renderHint();
+  document.getElementById('ansInput').value='';
+  document.getElementById('subState').textContent='';
+  // 이 조의 이번 라운드 제출 상태 구독
+  if(subRef){ subRef.off(); }
+  subRef = db.ref('submissions/'+round+'/'+myTeam);
+  subRef.on('value', s=>{ const v=s.val(); const ss=document.getElementById('subState'); ss.classList.remove('err');
+    if(v&&v.answer){ ss.innerHTML=`✅ 우리 조 제출: <b>${escapeHtml(v.answer)}</b>${v.by?` <span style="color:#a08a6a;font-weight:700">(${escapeHtml(v.by)} 힌트)</span>`:''}`; } else { ss.textContent=''; } });
+}
+function renderHint(){
+  const d=ROUNDS[round]||ROUNDS[0], slot=SLOTS[mySlot];
+  if(d.practice){ document.getElementById('rLbl').innerHTML='<span class="pchip">연습</span>'; document.getElementById('rBig').textContent='🍜 연습 라운드'; }
+  else{ document.getElementById('rLbl').textContent='ROUND'; document.getElementById('rBig').textContent=`${realNum(round)} / ${realTotal()}`; }
+  document.getElementById('cardTag').textContent=`${mySlot+1}번 · ${slot.nm} 힌트`;
+  const area=document.getElementById('hintArea'); const card=area.closest('.card');
+  card.style.animation='none'; void card.offsetWidth; card.style.animation='';
+  let html='';
+  switch(slot.key){
+    case 'ingredients': html='<ul class="h-list">'+d.ingredients.map(x=>`<li>${x}</li>`).join('')+'</ul>'; break;
+    case 'emoji': html=`<div class="h-emoji">${d.emoji}</div>`; break;
+    case 'word': html=`<div class="h-word">${d.word}<span class="sub">${d.wordSub}</span></div>`; break;
+    case 'origin': html=`<div class="h-text">${d.origin}</div>`; break;
+    case 'look': html=`<div class="h-text">${d.look}</div>`; break;
+    case 'scene': html=`<div class="h-text">${d.scene}</div>`; break;
+  }
+  area.innerHTML=html;
+}
+function submitAnswer(){
+  const ss=document.getElementById('subState');
+  const v=document.getElementById('ansInput').value.trim();
+  if(!v){ ss.classList.add('err'); ss.textContent='정답을 먼저 입력해 주세요'; clearTimeout(ss._t); ss._t=setTimeout(()=>{ss.classList.remove('err');ss.textContent='';},1600); return; }
+  ss.classList.remove('err'); ss.textContent='제출 중…';
+  db.ref('submissions/'+round+'/'+myTeam).set({ answer:v, name:teams[myTeam], by:SLOTS[mySlot].nm, ts:firebase.database.ServerValue.TIMESTAMP })
+    .catch(()=>{ ss.classList.add('err'); ss.textContent='제출 실패 — 인터넷 확인 후 다시 제출'; });
+  document.getElementById('ansInput').blur();
+}
+document.getElementById('ansBtn').onclick=submitAnswer;
+document.getElementById('ansInput').addEventListener('keydown',e=>{ if(e.key==='Enter')submitAnswer(); });
+function escapeHtml(s){ return (s+'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+</script>
+</body>
+</html>
