@@ -343,7 +343,7 @@
         <button class="btn ghost sm" id="c1back">‹ 장소 목록</button>
         <div class="row"><button class="btn ghost sm" id="c1prev">이전</button><button class="btn ghost sm" id="c1next">다음 ›</button></div>
       </div>
-      <div class="howto">맞히는 법 — 줌아웃하며 보여주다가, 외쳐서 맞힌 가족에게 <b>정답 공개</b> 후 점수.</div>
+      <div class="howto">맞히는 법 — 줌아웃하며 보여주다가, 아래 <b>답안 보드</b>로 가족 폰 답을 받아 <b>답안 공개 → 맞힌 가족 지급</b>. (외쳐서 맞히기도 가능 — 단 한 게임에 한 방법만!)</div>
       <div class="display">
         <span class="roundtag" id="c1tag">장소 1</span>
         <span class="counter" id="c1counter"></span>
@@ -365,7 +365,7 @@
       <div><div class="kicker">CORNER 02</div><h2 class="title">인물 설명 맞추기 🕵️</h2></div>
       <div class="row"><button class="btn ghost sm" id="c2prev">이전</button><button class="btn ghost sm" id="c2next">다음 ›</button></div>
     </div>
-    <div class="howto">맞히는 법 — <b>힌트 공개</b>로 한 줄씩 풀고, 외쳐서 맞힌 가족에게 <b>정답 공개</b> 후 점수. 앞 인물 2명은 <b>연습</b>이에요.</div>
+    <div class="howto">맞히는 법 — <b>힌트 공개</b>로 한 줄씩 풀고, 아래 <b>답안 보드</b>로 가족 폰 답을 받아 <b>답안 공개 → 맞힌 가족 지급</b>. 앞 인물 2명은 <b>연습</b>. (외쳐 맞히기도 가능 — 한 게임에 한 방법만!)</div>
     <div class="display">
       <span class="roundtag" id="c2tag">인물 1</span>
       <span class="counter" id="c2counter"></span>
@@ -410,7 +410,7 @@
       <div class="kicker">CORNER 04</div>
       <h2 class="title">우리 ○○를 소개합니다 🎤</h2>
       <p class="sub">① 각 가족이 소개할 한 명을 정하고 힌트 5개를 작성(인터뷰!) → ② 한 가족씩 힌트를 한 장씩 공개하면 다른 가족이 폰으로 맞히기. 출제한 가족은 빠집니다.</p>
-      <div class="howto">맞히는 법 — 운영자가 힌트를 타이핑해 한 장씩 공개. 외쳐서 맞힌 가족에게 <b>정답 공개</b> 후 점수.</div>
+      <div class="howto">맞히는 법 — 운영자가 힌트를 한 장씩 공개 → 아래 <b>답안 보드</b>로 가족 폰 답 받아 <b>답안 공개 → 맞힌 가족 지급</b>. <b>출제 가족</b>은 정답을 알므로 보드에서 그 가족 카드를 <b>✗로 빼고</b> 지급하세요!</div>
       <div class="card" style="margin-top:16px">
         <b style="font-size:17px">작성 타이머</b>
         <div class="row" style="margin-top:14px;align-items:flex-end">
@@ -560,7 +560,8 @@ function migrate(s){
   if(s.scores){ CORNERS.forEach(c=>{ if(!Array.isArray(s.scores[c.k])) s.scores[c.k]=new Array(n).fill(0); else while(s.scores[c.k].length<n) s.scores[c.k].push(0); }); }
   return s;
 }
-function save(){ try{localStorage.setItem(LS,JSON.stringify({teams:state.teams,scores:state.scores,predictions:state.predictions,awardLog:state.awardLog}));}catch(e){} if(fbOK){ try{db.ref('teams').set(state.teams);}catch(e){} } }
+function save(){ try{localStorage.setItem(LS,JSON.stringify({teams:state.teams,scores:state.scores,predictions:state.predictions,awardLog:state.awardLog}));}catch(e){}
+  if(fbOK){ try{ db.ref('teams').set(state.teams); db.ref('state').set({scores:state.scores,predictions:state.predictions,awardLog:state.awardLog}); }catch(e){} } }
 /* 멱등·영속 지급 원장 — 같은 (게임,번호,가족)엔 한 번만 지급, 환불 가능. 새로고침/라운드복귀/이중경로 중복지급 방지 */
 function ledgerKey(corner,idx,team){ return corner+'_'+idx+'_'+team; }
 function isGiven(corner,idx,team){ return state.awardLog[ledgerKey(corner,idx,team)]!=null; }
@@ -1131,12 +1132,22 @@ window.addEventListener('beforeunload', e=>{ e.preventDefault(); e.returnValue='
     if(JSON.stringify(remote)===JSON.stringify(state.teams))return;   // 변화 없으면 무시(에코)
     state.teams=remote.slice();
     CORNERS.forEach(c=>{ const arr=state.scores[c.k]; while(arr.length<remote.length)arr.push(0); arr.length=remote.length; });
-    try{localStorage.setItem(LS,JSON.stringify({teams:state.teams,scores:state.scores,predictions:state.predictions}));}catch(e){}
+    try{localStorage.setItem(LS,JSON.stringify({teams:state.teams,scores:state.scores,predictions:state.predictions,awardLog:state.awardLog}));}catch(e){}
     const ae=document.activeElement;
     if(!(ae && ae.closest && ae.closest('#teamChips')) && activeScreen==='home') renderTeamChips();
     if(activeScreen==='score')renderScore(); if(activeScreen==='agg')renderAgg();
     if(BOARD.game)renderBoardInto(BOARD.game);
   });
+  // 점수 복구 — 새 노트북/시크릿창(로컬 점수 전부 0)이면 Firebase 백업 점수를 불러옴
+  db.ref('state').once('value', s=>{ const r=s.val(); if(!r||!r.scores)return;
+    const localEmpty = CORNERS.every(c=>(state.scores[c.k]||[]).every(v=>!v));
+    if(!localEmpty) return;
+    state.scores=r.scores; state.predictions=r.predictions||{}; state.awardLog=r.awardLog||{};
+    CORNERS.forEach(c=>{ if(!Array.isArray(state.scores[c.k]))state.scores[c.k]=new Array(state.teams.length).fill(0);
+      while(state.scores[c.k].length<state.teams.length)state.scores[c.k].push(0); });
+    try{localStorage.setItem(LS,JSON.stringify({teams:state.teams,scores:state.scores,predictions:state.predictions,awardLog:state.awardLog}));}catch(e){}
+    if(activeScreen==='score')renderScore(); if(activeScreen==='agg')renderAgg();
+    toast('이전 점수를 불러왔어요'); });
 })();
 </script>
 </body>
