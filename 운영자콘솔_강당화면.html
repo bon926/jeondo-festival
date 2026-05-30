@@ -37,14 +37,14 @@
   .nav .scorebtn{background:var(--tangerine);color:#3a2604;}
   /* 모바일: 나브바를 한 줄로(넘치면 가로 스크롤), 크기 축소 + '운영자 콘솔' 숨김 */
   @media (max-width:680px){
-    .nav{flex-wrap:nowrap;overflow-x:auto;gap:5px;padding:8px 10px;-webkit-overflow-scrolling:touch;}
+    .nav{flex-wrap:nowrap;overflow-x:auto;gap:10px;padding:13px 16px;-webkit-overflow-scrolling:touch;}
     .nav::-webkit-scrollbar{display:none;}
     .nav>*{flex-shrink:0;}
-    .nav .logo{font-size:12px;margin-right:4px;white-space:nowrap;}
+    .nav .logo{font-size:13px;margin-right:10px;white-space:nowrap;}
     .nav .logo-sub{display:none;}
-    .nav button{padding:7px 11px;font-size:12px;white-space:nowrap;}
+    .nav button{padding:9px 16px;font-size:13px;white-space:nowrap;}
     .nav .spacer{display:none;}
-    #navConn{margin-left:2px;}
+    #navConn{margin-left:6px;margin-right:4px;}
   }
 
   .stage{flex:1;padding:26px clamp(16px,4vw,48px) 60px;position:relative;}
@@ -220,6 +220,10 @@
   .mdirect button{background:var(--ink);color:#fff;border:none;border-radius:12px;padding:0 20px;font-weight:900;cursor:pointer;font-size:15px;}
   .mcurrent{margin-top:14px;background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;font-weight:800;font-size:14px;line-height:1.7;color:#5b4327;}
   .mcurrent b{color:var(--tomato);}
+  .c4custom{display:inline-flex;align-items:center;gap:5px;}
+  .c4custom input{width:56px;border:2px solid var(--line);border-radius:10px;padding:9px 6px;font-weight:800;font-size:15px;text-align:center;background:var(--paper);color:var(--ink);}
+  .c4custom input:focus{outline:2px solid var(--tangerine);}
+  .c4custom span{font-weight:900;color:#8a7150;}
 </style>
 </head>
 <body>
@@ -385,6 +389,12 @@
           <div style="font-size:64px;font-weight:900;letter-spacing:-2px" id="c4clock">04:00</div>
           <div class="ptsel" style="margin:0">
             <button data-min="3">3분</button><button data-min="4" class="sel">4분</button><button data-min="5">5분</button>
+          </div>
+          <div class="c4custom">
+            <input id="c4minIn" type="number" min="0" max="99" placeholder="분" inputmode="numeric">
+            <span>:</span>
+            <input id="c4secIn" type="number" min="0" max="59" placeholder="초" inputmode="numeric">
+            <button class="btn ghost sm" id="c4setTime">설정</button>
           </div>
           <button class="btn amber" id="c4timer">▶ 시작 / 멈춤</button>
           <button class="btn ghost" id="c4goboard">힌트 입력 화면 ›</button>
@@ -814,6 +824,18 @@ function renderClock(){document.getElementById('c4clock').textContent=fmt(c4secs
 document.querySelectorAll('#c4 .ptsel button').forEach(b=>b.onclick=()=>{ document.querySelectorAll('#c4 .ptsel button').forEach(x=>x.classList.remove('sel')); b.classList.add('sel'); c4secs=(+b.dataset.min)*60; renderClock(); });
 document.getElementById('c4timer').onclick=()=>{ c4timerOn=!c4timerOn;
   if(c4timerOn){ c4int=setInterval(()=>{ if(c4secs>0){c4secs--;renderClock();} else {clearInterval(c4int);c4timerOn=false;toast('작성 시간 종료!');} },1000); } else clearInterval(c4int); };
+/* 타이머 시간 직접 설정 (분:초) */
+document.getElementById('c4setTime').onclick=()=>{
+  let m=parseInt(document.getElementById('c4minIn').value,10); if(isNaN(m))m=0;
+  let s=parseInt(document.getElementById('c4secIn').value,10); if(isNaN(s))s=0;
+  if(s>59)s=59; const total=m*60+s;
+  if(total<=0){ toast('시간을 입력하세요 (예: 4분 30초)'); return; }
+  if(c4timerOn){ clearInterval(c4int); c4timerOn=false; }
+  c4secs=total; renderClock();
+  document.querySelectorAll('#c4 .ptsel button').forEach(x=>x.classList.remove('sel'));
+  toast('타이머 '+fmt(total)+' 으로 설정');
+};
+['c4minIn','c4secIn'].forEach(id=>document.getElementById(id).addEventListener('keydown',e=>{ if(e.key==='Enter'){e.preventDefault();document.getElementById('c4setTime').click();} }));
 function c4view(v){ ['c4-intro','c4-board','c4-show'].forEach(id=>document.getElementById(id).style.display=(id===v?'block':'none')); }
 document.getElementById('c4goboard').onclick=()=>c4view('c4-board');
 document.getElementById('c4backintro').onclick=()=>c4view('c4-intro');
