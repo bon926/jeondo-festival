@@ -226,6 +226,25 @@
   .c4custom span{font-weight:900;color:#8a7150;}
   table.agg select{padding:7px 8px;border:1.5px solid var(--line);border-radius:9px;font-weight:800;font-size:13px;background:var(--paper);color:var(--ink);max-width:96px;}
   #c5result .agg td{font-size:13.5px;}
+
+  /* ---------- 실시간 답안 보드(강당 화면) ---------- */
+  .ansboard{margin-top:18px;}
+  .ab-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
+  .ab-bar .ab-title{font-weight:900;font-size:16px;margin-right:auto;}
+  .ab-bar .ab-count{font-size:13px;font-weight:800;color:#a08a6a;}
+  .ab-pts{border:2px solid var(--line);background:var(--paper);border-radius:12px;padding:8px 10px;font-weight:900;font-size:14px;color:var(--ink);}
+  .ab-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;}
+  .ab-card{background:var(--paper);border:2px solid var(--line);border-radius:16px;padding:14px 14px;text-align:center;min-height:92px;display:flex;flex-direction:column;justify-content:center;gap:7px;animation:slidein .3s ease;}
+  .ab-card .abt{font-weight:900;font-size:15px;color:#8a7150;}
+  .ab-card .aba{font-weight:900;font-size:clamp(18px,2.1vw,26px);color:var(--ink);line-height:1.2;}
+  .ab-card .abwait{color:#c9b48d;font-weight:800;font-size:14px;}
+  .ab-card.ok{background:#eef7e6;border-color:var(--leaf);}
+  .ab-card.no{background:#fdeceb;border-color:#e0a99f;}
+  .ab-card .badge{font-size:13px;font-weight:900;cursor:pointer;border-radius:20px;padding:4px 12px;display:inline-block;align-self:center;border:none;}
+  .ab-card.ok .badge{background:var(--leaf);color:#fff;}
+  .ab-card.no .badge{background:#fbe3e3;color:#c0392b;}
+  .ab-hint{font-size:12.5px;color:#a08a6a;font-weight:700;margin-top:10px;text-align:center;}
+  .ab-ref{font-size:13px;color:#8a5a12;font-weight:800;background:#fff4dc;border:1.5px solid #f0d79a;border-radius:10px;padding:6px 12px;display:inline-block;}
 </style>
 </head>
 <body>
@@ -329,6 +348,7 @@
         <button class="btn" id="c1reveal">정답 공개</button>
       </div>
       <div class="award card" id="c1award" style="display:none"></div>
+      <div class="ansboard" id="board_c1"></div>
     </div>
   </section>
 
@@ -350,6 +370,7 @@
       <button class="btn" id="c2reveal">정답 공개</button>
     </div>
     <div class="award card" id="c2award" style="display:none"></div>
+    <div class="ansboard" id="board_c2"></div>
   </section>
 
   <!-- ============ CORNER 3 : 요리 (운영자) ============ -->
@@ -362,7 +383,7 @@
         <button class="btn amber sm" id="c3next">다음 라운드 ›</button>
       </div>
     </div>
-    <div class="howto">진행 — 운영자가 <b>라운드를 넘기면</b> 모든 폰이 자동으로 따라와요. 조가 폰으로 정답을 <b>제출</b>하면 아래에 실시간으로 떠요. ✓ 표시(자동 채점)를 참고해 <b>점수 주기</b>를 누르면 ③요리 칸에 기록돼요. 첫 라운드(라면)는 <b>연습</b>.</div>
+    <div class="howto">진행 — 아래 보드에서 <b>폰 답 받기 시작</b>을 누르면 조원 폰에 입력칸이 열려요. 제출이 카드로 뜨면 <b>결과 발표</b> → <b>맞힌 조 지급</b>. 라운드를 넘기면 폰도 자동으로 따라와요. 첫 라운드(라면)는 <b>연습</b>.</div>
     <div class="display" style="min-height:30vh">
       <span class="roundtag" id="c3tag">ROUND 1 / 8</span>
       <div id="c3body"><div class="prompt-big">이 요리는?</div><div id="c3answer" style="margin-top:14px"></div></div>
@@ -373,10 +394,7 @@
       <button class="btn ghost" id="c3resetall" style="color:#c0392b">③요리 전체 초기화</button>
     </div>
 
-    <div class="card" id="c3subs" style="margin-top:16px">
-      <div class="row" style="justify-content:space-between"><b style="font-size:16px">📥 실시간 제출 현황</b><span id="c3subcount" style="font-size:13px;color:#a08a6a;font-weight:800"></span></div>
-      <div id="c3sublist" style="margin-top:12px"></div>
-    </div>
+    <div class="ansboard" id="board_c3"></div>
   </section>
 
   <!-- ============ CORNER 4 : 인물 소개 추리 ============ -->
@@ -440,6 +458,7 @@
         <button class="btn" id="c4reveal">정답 공개</button>
       </div>
       <div class="award card" id="c4award" style="display:none"></div>
+      <div class="ansboard" id="board_c4"></div>
     </div>
   </section>
 
@@ -540,7 +559,7 @@ function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.
 let activeScreen='home';
 function go(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
   document.querySelectorAll('.nav button[data-go]').forEach(b=>b.classList.toggle('active',b.dataset.go===id));
-  if(id==='score')renderScore(); if(id==='agg')renderAgg(); if(id==='home')renderTeamChips(); if(id==='c3')showDish(); if(id==='c5')renderC5Pred(); activeScreen=id; }
+  if(id==='score')renderScore(); if(id==='agg')renderAgg(); if(id==='home')renderTeamChips(); if(id==='c3')showDish(); if(id==='c5')renderC5Pred(); if(id==='c1'||id==='c2'||id==='c4')renderBoardInto(id); activeScreen=id; }
 document.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
 
 /* =================== 조 / 점수 =================== */
@@ -705,6 +724,7 @@ function showLoc(){
   if(l.img) frame.innerHTML=`<img id="c1img" src="${l.img}" style="transform:scale(${ZOOMS[0]})">`;
   else frame.innerHTML=`<div class="zoom-empty">📷 "${l.name||'이 장소'}" 사진 미등록<br><span style="font-size:13px">사진 없이도 정답 공개로 진행 가능</span></div>`;
   document.getElementById('c1answer').innerHTML=''; document.getElementById('c1award').style.display='none';
+  boardSync('c1');
 }
 document.getElementById('c1zoomout').onclick=()=>{ if(c1zoom<ZOOMS.length-1){c1zoom++; const img=document.getElementById('c1img');
   if(img)img.style.transform=`scale(${ZOOMS[c1zoom]})`; toast(`줌아웃 ${c1zoom+1}/${ZOOMS.length} · 지금 맞히면 ${C1PTS[c1zoom]}점`);} else toast('이미 전체가 보여요'); };
@@ -746,7 +766,7 @@ function realPTotal(){ return PEOPLE.filter(p=>!p.practice).length; }
 function showPerson(){ c2shown=1; const p=PEOPLE[c2i];
   document.getElementById('c2tag').innerHTML = p.practice?'<span class="pchip">연습</span>':`인물 ${realPNum(c2i)}`;
   document.getElementById('c2counter').textContent = p.practice?'연습':`${realPNum(c2i)} / ${realPTotal()}`;
-  document.getElementById('c2answer').innerHTML=''; document.getElementById('c2award').style.display='none'; renderC2Hints(); }
+  document.getElementById('c2answer').innerHTML=''; document.getElementById('c2award').style.display='none'; renderC2Hints(); boardSync('c2'); }
 function renderC2Hints(){ const p=PEOPLE[c2i]; const box=document.getElementById('c2hints'); box.innerHTML='';
   for(let k=0;k<c2shown;k++){ const d=document.createElement('div'); d.className='hint-line'; d.innerHTML=`<span class="n">힌트 ${k+1}</span><span>${p.h[k]}</span>`; box.appendChild(d); } }
 document.getElementById('c2more').onclick=()=>{ const p=PEOPLE[c2i]; if(c2shown<p.h.length){c2shown++; renderC2Hints(); if(!p.practice)toast(`지금 맞히면 ${C2PTS[c2shown-1]}점`);} else toast('힌트를 다 공개했어요'); };
@@ -779,7 +799,7 @@ const ROUNDS=[
   {a:"세비체", alt:["세비치","ceviche","쎄비체","seviche"]},
   {a:"카이막", alt:["kaymak","카이마크","카이막크림"]},
 ];
-let c3i=0; const C3PTS=[50,40,30]; let c3subRef=null;
+let c3i=0;
 function realRNum(i){ let n=0; for(let k=0;k<=i;k++) if(!ROUNDS[k].practice)n++; return n; }
 function realRTotal(){ return ROUNDS.filter(r=>!r.practice).length; }
 function normalize(s){ return (s||'').toLowerCase().replace(/[\s()\[\]·.,!?~]/g,''); }
@@ -793,57 +813,18 @@ function isCorrect(submitted, round){ const b=normalize(submitted); if(!b)return
 function showDish(){ const r=ROUNDS[c3i];
   document.getElementById('c3tag').innerHTML = r.practice?'<span class="pchip">연습</span> 라면':`ROUND ${realRNum(c3i)} / ${realRTotal()}`;
   document.getElementById('c3body').innerHTML=`<div class="prompt-big">이 요리는?</div><div id="c3answer" style="margin-top:14px"></div>`;
-  listenSubs();
+  boardSync('c3');
 }
-function setRound(n){ c3i=n; if(fbOK){ db.ref('round').set(n); } showDish(); }
+function setRound(n){ c3i=n; showDish(); }
 document.getElementById('c3reveal').onclick=()=>{ const r=ROUNDS[c3i];
   document.getElementById('c3answer').innerHTML=`<div class="answer-big">${r.a}</div>`; };
 document.getElementById('c3prev').onclick=()=>{ if(c3i>0) setRound(c3i-1); };
 document.getElementById('c3next').onclick=()=>{ if(c3i<ROUNDS.length-1) setRound(c3i+1); else toast('마지막 라운드예요'); };
 document.getElementById('c3clearsub').onclick=()=>{ if(!fbOK){toast('Firebase 설정이 필요해요');return;}
-  if(confirm('이번 라운드(ROUND '+(ROUNDS[c3i].practice?'연습':realRNum(c3i))+')의 제출을 모두 지울까요?')) db.ref('submissions/'+c3i).remove(); };
+  if(confirm('이번 라운드의 폰 답안을 모두 지울까요?')){ db.ref('answers/c3/'+c3i).remove(); } };
 document.getElementById('c3resetall').onclick=()=>{ if(!fbOK){toast('Firebase 설정이 필요해요');return;}
-  if(confirm('리허설/이전 제출을 모두 비우고 1라운드(연습)부터 다시 시작할까요?\n행사 시작 전에 한 번 눌러 깨끗이 비우는 걸 권장해요.')){
-    db.ref('submissions').remove();
-    Object.keys(awarded).forEach(k=>{ if(k.indexOf('c3_')===0) delete awarded[k]; });
-    setRound(0); toast('③요리 제출을 모두 비웠어요'); } };
-
-function listenSubs(){
-  const list=document.getElementById('c3sublist'), cnt=document.getElementById('c3subcount');
-  if(!fbOK){ list.innerHTML='<div class="practice-note" style="margin:0">⚙️ Firebase 설정을 넣으면 폰 제출이 여기 실시간으로 떠요.</div>'; cnt.textContent=''; return; }
-  if(c3subRef) c3subRef.off();
-  c3subRef = db.ref('submissions/'+c3i);
-  c3subRef.on('value', snap=>{
-    const v=snap.val()||{}; const round=ROUNDS[c3i];
-    const rows=Object.keys(v).map(k=>({team:+k, ...v[k]}))
-      .filter(r=>r.answer && Number.isInteger(r.team) && r.team>=0 && r.team<state.teams.length)
-      .sort((a,b)=>(a.ts||0)-(b.ts||0));
-    cnt.textContent=`${rows.length}개 제출`;
-    if(!rows.length){ list.innerHTML='<div style="color:#a08a6a;font-weight:700;font-size:14px;padding:6px 2px">아직 제출이 없어요. 조가 폰에서 제출하면 여기 떠요.</div>'; return; }
-    let order=0;
-    list.innerHTML = rows.map(r=>{
-      const ok=isCorrect(r.answer, round); const name=state.teams[r.team];
-      if(ok) order++;
-      const pts = ok ? (C3PTS[Math.min(order-1,C3PTS.length-1)]) : 30;
-      const akey='c3_'+c3i+'_'+r.team; const given=awarded[akey];
-      let inner;
-      if(round.practice){ inner='<em style="color:#a08a6a">연습</em>'; }
-      else if(given!=null){ inner=`<button class="given" data-t="${r.team}" data-p="${given}" data-k="${akey}" data-ok="${ok?1:0}">✓ ${given}점 (취소)</button>`; }
-      else { inner=`<button class="${ok?'':'manual'}" data-t="${r.team}" data-p="${pts}" data-k="${akey}" data-ok="${ok?1:0}">${ok?'+'+pts+'점':'직접 +'+pts+'점'}</button>`; }
-      return `<div class="sub-row ${ok?'ok':'no'}">
-        <span class="badge">${ok?'✓ 정답':'✗'}</span>
-        <span class="sname">${escapeHtml(name)}</span>
-        <span class="sans">${escapeHtml(r.answer)}</span>
-        <span class="sgive">${inner}</span></div>`;
-    }).join('');
-    list.querySelectorAll('button[data-k]').forEach(b=>b.onclick=()=>{
-      const t=+b.dataset.t, p=+b.dataset.p, k=b.dataset.k, ok=b.dataset.ok==='1';
-      const given=awardToggle('c3', t, p, k);
-      if(given){ b.classList.add('given'); b.classList.remove('manual'); b.textContent=`✓ ${p}점 (취소)`; }
-      else { b.classList.remove('given'); if(!ok) b.classList.add('manual'); b.textContent=ok?('+'+p+'점'):('직접 +'+p+'점'); }
-    });
-  });
-}
+  if(confirm('모든 게임의 폰 답안을 비울까요?\n(행사 시작 전·리허설 후 한 번 권장)')){
+    db.ref('answers').remove(); toast('폰 답안을 모두 비웠어요'); if(BOARD.game)boardSync(BOARD.game); } };
 function escapeHtml(s){ return (s+'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
 /* =================== CORNER 4 =================== */
@@ -879,11 +860,11 @@ document.getElementById('c4example').onclick=()=>{
   document.getElementById('h4_ans').value='(예시) ○○ 님';
   toast('연습 예시를 채웠어요 — 공개 화면으로 띄워보세요');
 };
-let c4shown=0, c4data=null;
+let c4shown=0, c4data=null, c4idx=0;
 document.getElementById('c4present').onclick=()=>{
   c4data={ h:['1','2','3','4','5'].map(k=>document.getElementById('h4_'+k).value.trim()).filter(x=>x), a:document.getElementById('h4_ans').value.trim() };
   if(!c4data.h.length){toast('힌트를 1개 이상 입력하세요');return;}
-  c4shown=1; c4view('c4-show'); document.getElementById('c4answer').innerHTML=''; document.getElementById('c4award').style.display='none'; renderC4Hints(); };
+  c4shown=1; c4view('c4-show'); document.getElementById('c4answer').innerHTML=''; document.getElementById('c4award').style.display='none'; renderC4Hints(); c4idx++; boardSync('c4'); };
 function renderC4Hints(){ const box=document.getElementById('c4hints'); box.innerHTML='';
   for(let k=0;k<c4shown;k++){ const d=document.createElement('div'); d.className='hint-line'; d.innerHTML=`<span class="n">힌트 ${k+1}</span><span>${c4data.h[k]}</span>`; box.appendChild(d); } }
 document.getElementById('c4more').onclick=()=>{ if(c4shown<c4data.h.length){c4shown++;renderC4Hints();} else toast('힌트를 다 공개했어요'); };
@@ -1011,6 +992,78 @@ function renderC5Result(winners, correct, pts){
 }
 document.getElementById('c5score').onclick=c5ScoreAndAward;
 
+/* =================== 실시간 답안 보드 (모든 게임 공용) =================== */
+const BOARD={ game:null, idx:0, open:false, ref:null, answers:{}, revealed:false, marks:{}, given:{}, pts:50 };
+const BOARD_DEF_PTS={ c1:100, c2:100, c3:50, c4:100 };
+function gameIdx(game){ if(game==='c1')return c1i; if(game==='c2')return c2i; if(game==='c3')return c3i; if(game==='c4')return c4idx; return 0; }
+function gameLabel(game){ return ({c1:'①장소',c2:'②인물',c3:'③요리',c4:'④소개'})[game]||game; }
+function boardKnownAnswer(){
+  if(BOARD.game==='c1') return locs[BOARD.idx]?(locs[BOARD.idx].name||''):'';
+  if(BOARD.game==='c2') return PEOPLE[BOARD.idx]?PEOPLE[BOARD.idx].a:'';
+  if(BOARD.game==='c3') return ROUNDS[BOARD.idx]?ROUNDS[BOARD.idx].a:'';
+  if(BOARD.game==='c4') return (c4data&&c4data.a)||''; return ''; }
+function boardIsPractice(){
+  if(BOARD.game==='c1') return !!(locs[BOARD.idx]&&locs[BOARD.idx].practice);
+  if(BOARD.game==='c2') return !!(PEOPLE[BOARD.idx]&&PEOPLE[BOARD.idx].practice);
+  if(BOARD.game==='c3') return !!(ROUNDS[BOARD.idx]&&ROUNDS[BOARD.idx].practice);
+  return false; }
+function answerMatch(sub,ans){ const a=normalize(ans), b=normalize(sub); if(!a||!b)return false;
+  return a===b || (a.length>=2 && b.includes(a)) || (b.length>=2 && a.includes(b)); }
+function boardAuto(sub){
+  if(BOARD.game==='c1') return false; /* 장소는 운영자 수동 판정 */
+  if(BOARD.game==='c3') return ROUNDS[BOARD.idx]?isCorrect(sub,ROUNDS[BOARD.idx]):false;
+  const ans=boardKnownAnswer(); return ans?answerMatch(sub,ans):false; }
+function setActiveFB(){ if(fbOK){ try{ db.ref('active').set({game:BOARD.game, idx:BOARD.idx, open:BOARD.open}); }catch(e){} } }
+function boardStart(game, idx){
+  BOARD.game=game; BOARD.idx=idx; BOARD.open=true; BOARD.revealed=false; BOARD.marks={}; BOARD.given={}; BOARD.pts=BOARD_DEF_PTS[game]||50;
+  setActiveFB(); boardListen(); renderBoardInto(game); }
+function boardClose(){ BOARD.open=false; setActiveFB(); renderBoardInto(BOARD.game); }
+function boardListen(){ if(BOARD.ref){ BOARD.ref.off(); BOARD.ref=null; }
+  if(!fbOK || BOARD.game==null) return;
+  BOARD.ref=db.ref('answers/'+BOARD.game+'/'+BOARD.idx);
+  BOARD.ref.on('value', s=>{ BOARD.answers=s.val()||{}; renderBoardInto(BOARD.game); }); }
+function boardReveal(){ BOARD.revealed=true;
+  Object.keys(BOARD.answers).forEach(k=>{ const t=+k,v=BOARD.answers[k]; if(v&&v.answer && BOARD.marks[t]===undefined) BOARD.marks[t]=boardAuto(v.answer); });
+  renderBoardInto(BOARD.game); }
+function boardAward(){ if(boardIsPractice()){ toast('연습은 점수 없이 진행해요'); return; }
+  let n=0; Object.keys(BOARD.answers).forEach(k=>{ const t=+k;
+    if(BOARD.marks[t] && !BOARD.given[t] && Number.isInteger(t) && t>=0 && t<state.teams.length){ award(BOARD.game,t,BOARD.pts); BOARD.given[t]=BOARD.pts; n++; } });
+  renderBoardInto(BOARD.game);
+  toast(n?`맞힌 ${n}개 조에 +${BOARD.pts}점`:'✓ 표시된 조가 없어요'); }
+function boardSync(game){ if(BOARD.game===game && BOARD.open){ boardStart(game, gameIdx(game)); } else { renderBoardInto(game); } }
+function renderBoardInto(game){
+  const host=document.getElementById('board_'+game); if(!host) return;
+  if(BOARD.game!==game){
+    host.innerHTML = fbOK
+      ? `<div class="ab-bar"><span class="ab-title">📲 답안 보드</span><button class="btn amber sm" id="bstart_${game}">이 문제로 폰 답 받기 시작</button></div><div class="ab-hint">시작을 누르면 조원 폰에 답 입력칸이 열리고, 제출이 여기 카드로 떠요.</div>`
+      : `<div class="ab-hint">⚙️ Firebase 설정을 넣으면 조별 폰 답안이 여기 실시간으로 떠요.</div>`;
+    const sb=document.getElementById('bstart_'+game); if(sb) sb.onclick=()=>boardStart(game, gameIdx(game));
+    return;
+  }
+  const ans=boardKnownAnswer(), practice=boardIsPractice();
+  const cnt=Object.keys(BOARD.answers).filter(k=>BOARD.answers[k]&&BOARD.answers[k].answer).length;
+  let bar=`<div class="ab-bar"><span class="ab-title">📲 답안 보드 · ${gameLabel(game)}</span><span class="ab-count">${cnt} / ${state.teams.length} 제출</span>`;
+  bar+=`<button class="btn ghost sm" id="bclose_${game}">${BOARD.open?'⏸ 제출 닫기':'▶ 제출 열기'}</button>`;
+  if(!BOARD.revealed){ bar+=`<button class="btn sm" id="breveal_${game}">🙈 결과 발표</button>`; }
+  else { bar+=`<select class="ab-pts" id="bpts_${game}">${[100,70,50,40,30,20,10].map(p=>`<option value="${p}" ${p===BOARD.pts?'selected':''}>맞힌 조 +${p}점</option>`).join('')}</select><button class="btn sm" id="baward_${game}">✅ 지급</button>`; }
+  bar+=`</div>`;
+  if(BOARD.revealed){ bar+= game==='c1'
+    ? `<div style="text-align:center;margin-bottom:10px"><span class="ab-ref">카드를 눌러 ✓/✗ 직접 판정${ans?` · 참고 이름: ${escapeHtml(ans)}`:''}</span></div>`
+    : (ans?`<div style="text-align:center;margin-bottom:10px"><span class="ab-ref">정답: ${escapeHtml(ans)} · 카드를 눌러 ✓/✗ 고칠 수 있어요</span></div>`:''); }
+  let cards='<div class="ab-cards">';
+  state.teams.forEach((t,i)=>{ const v=BOARD.answers[i]; const sub=v&&v.answer; let cls='',badge='';
+    if(BOARD.revealed && sub){ const ok=!!BOARD.marks[i]; cls=ok?'ok':'no'; badge=`<button class="badge" data-mark="${i}">${ok?'✓ 정답':'✗ 오답'}</button>`; }
+    cards+=`<div class="ab-card ${cls}"><div class="abt">${escapeHtml(t)}</div>`+
+      (sub?`<div class="aba">${escapeHtml(v.answer)}</div>`:`<div class="abwait">…대기</div>`)+badge+`</div>`; });
+  cards+='</div>';
+  host.innerHTML=bar+cards+(practice?'<div class="ab-hint">🟡 연습 — 점수는 없어요</div>':'');
+  const cl=document.getElementById('bclose_'+game); if(cl) cl.onclick=()=>{ if(BOARD.open){boardClose();} else {BOARD.open=true; setActiveFB(); renderBoardInto(game);} };
+  const rv=document.getElementById('breveal_'+game); if(rv) rv.onclick=boardReveal;
+  const aw=document.getElementById('baward_'+game); if(aw) aw.onclick=boardAward;
+  const ps=document.getElementById('bpts_'+game); if(ps) ps.onchange=e=>{ BOARD.pts=+e.target.value; };
+  host.querySelectorAll('[data-mark]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.mark; BOARD.marks[i]=!BOARD.marks[i]; renderBoardInto(game); });
+}
+
 /* =================== 키보드 =================== */
 document.addEventListener('keydown',e=>{ if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
   const fin=document.getElementById('finale');
@@ -1046,8 +1099,6 @@ window.addEventListener('beforeunload', e=>{ e.preventDefault(); e.returnValue='
       renderTeamChips();
     } else { db.ref('teams').set(state.teams); }   // 첫 행사: 내 조 목록을 폰에 공유
   });
-  db.ref('round').once('value', s=>{ if(s.val()==null) db.ref('round').set(0); });
-  db.ref('round').on('value', s=>{ const n=(s.val()==null?0:s.val()); if(n!==c3i){ c3i=n; if(activeScreen==='c3') showDish(); } });
 })();
 </script>
 </body>

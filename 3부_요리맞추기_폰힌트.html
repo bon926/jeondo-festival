@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light only">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>이 요리는 뭘까? — 조별 제출</title>
+<title>전도축제 · 답안 제출</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="firebase-config.js?v=2"></script><!-- ★ Firebase 설정은 firebase-config.js 한 곳에만 넣으면 콘솔·폰 둘 다 적용 (?v= 는 캐시 갱신용) -->
@@ -87,6 +87,10 @@
   .ptoast.on{opacity:1;transform:translateX(-50%) translateY(-4px);}
   .sub-state.err{color:#c0392b;}
   .backlink{align-self:flex-start;background:var(--card);border:1.5px solid var(--line);color:#8a7150;padding:8px 13px;border-radius:30px;font-size:12.5px;font-weight:800;cursor:pointer;margin-bottom:10px;}
+  .genprompt{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;background:var(--card);border:2px solid var(--line);border-radius:22px;padding:24px;box-shadow:0 10px 24px var(--shadow);min-height:34vh;animation:pop .28s ease;}
+  .genprompt .gpic{font-size:54px;line-height:1.1;}
+  .genprompt .gpt{font-size:23px;font-weight:900;margin-top:12px;color:var(--ink);}
+  .genprompt .gps{font-size:14px;color:#8a7150;font-weight:700;margin-top:10px;line-height:1.6;}
 </style>
 </head>
 <body>
@@ -106,9 +110,9 @@
   <!-- 조 선택 -->
   <section class="scr" id="pickTeam">
     <div class="brand">
-      <div class="kicker">청년부 전도축제 · 3부</div>
-      <h1>이 요리는 뭘까요? 🍽️</h1>
-      <p>우리 조 폰들에 힌트가 <b>조각조각</b> 흩어져요.<br>서로 보여주며 의논하고, <b>조 대표가 정답을 제출</b>해요!</p>
+      <div class="kicker">청년부 전도축제 · 답안 제출</div>
+      <h1>우리 조 답안지 ✍️</h1>
+      <p>운영자가 문제를 열면 여기에 떠요.<br>의논해서 <b>조 대표가 답을 제출</b>하세요!</p>
     </div>
     <div class="step-q">① 우리 조를 골라주세요</div>
     <div class="opts teamcol" id="teamGrid"></div>
@@ -128,30 +132,43 @@
     <div class="conn" id="conn2" style="margin-top:12px"><span class="dot"></span><span>연결 확인 중…</span></div>
   </section>
 
-  <!-- 게임 -->
+  <!-- 대기 -->
+  <section class="scr" id="waiting">
+    <div class="topbar">
+      <span class="myteam" id="wTeam">○조</span>
+      <button class="change" id="changeBtn2">조 변경</button>
+    </div>
+    <div class="notice" style="flex:1"><div class="box">
+      <h2>⏳ 잠시만요!</h2>
+      <p>운영자가 문제를 열면<br>여기에 <b>답 입력칸</b>이 자동으로 떠요.<br>강당 화면을 보며 기다려 주세요 🙂</p>
+    </div></div>
+  </section>
+
+  <!-- 게임(답안 제출) -->
   <section class="scr" id="game">
     <div class="topbar">
       <span class="myteam" id="gTeam">○조</span>
-      <span class="myslot" id="gSlot">🧺 재료</span>
-      <button class="change" id="changeBtn">변경</button>
+      <span class="myslot" id="gSlot" style="display:none">🧺 재료</span>
+      <button class="change" id="changeBtn">조 변경</button>
     </div>
 
     <div class="round-line">
-      <div class="lbl" id="rLbl">ROUND</div>
+      <div class="lbl" id="rLbl">지금 문제</div>
       <div class="big" id="rBig">—</div>
     </div>
 
-    <div class="card">
+    <div class="card" id="hintCard" style="display:none">
       <span class="tag" id="cardTag">내 힌트</span>
       <div class="hint-area" id="hintArea"></div>
     </div>
+    <div class="genprompt" id="genPrompt" style="display:none"></div>
 
     <div class="submit">
-      <input id="ansInput" placeholder="우리 조 정답 입력" autocomplete="off">
+      <input id="ansInput" placeholder="우리 조 답 입력" autocomplete="off">
       <button id="ansBtn">제출</button>
     </div>
     <div class="sub-state" id="subState"></div>
-    <div class="footer-note">제출은 <b>조에 하나</b>예요(누가 내든 같은 칸). 다시 내면 덮어써요.<br>운영자가 라운드를 넘기면 화면이 <b>자동으로</b> 바뀌어요.</div>
+    <div class="footer-note">제출은 <b>조에 하나</b>예요(누가 내든 같은 칸). 다시 내면 덮어써요.<br>운영자가 다음 문제로 넘기면 화면이 <b>자동으로</b> 바뀌어요.</div>
   </section>
 
   <div class="ptoast" id="ptoast"></div>
@@ -205,55 +222,81 @@ function realTotal(){return ROUNDS.filter(r=>!r.practice).length;}
 let db=null, fbOK=false;
 try{ if(FIREBASE_CONFIG.databaseURL && FIREBASE_CONFIG.databaseURL.indexOf('여기에')<0){ firebase.initializeApp(FIREBASE_CONFIG); db=firebase.database(); fbOK=true; } }catch(e){ fbOK=false; }
 
-let teams=[], myTeam=null, mySlot=null, round=0, subRef=null;
+const GAMEINFO={ c1:{ic:'📍',t:'이 장소는 어디일까요?',s:'강당 화면(사진)을 보고 장소 이름을 적어주세요'},
+  c2:{ic:'🕵️',t:'이 인물은 누구일까요?',s:'강당 화면의 힌트를 보고 답을 적어주세요'},
+  c4:{ic:'🎤',t:'이 사람은 누구일까요?',s:'강당 화면의 소개 힌트를 보고 답을 적어주세요'} };
+function gameLabelKo(g){ return ({c1:'①장소 맞히기',c2:'②인물 맞히기',c3:'③요리',c4:'④소개 맞히기'})[g]||g; }
+
+let teams=[], myTeam=null, mySlot=null, active=null, ansRef=null, curKey=null;
 
 function show(id){ document.querySelectorAll('.scr').forEach(s=>s.classList.toggle('on',s.id===id)); }
 function ptoast(m){ const t=document.getElementById('ptoast'); if(!t)return; t.textContent=m; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),1800); }
 function setConn(ok){ ['conn1','conn2'].forEach(id=>{ const el=document.getElementById(id); if(!el)return;
     el.classList.toggle('ok',ok); el.querySelector('span:last-child').textContent=ok?'실시간 연결됨':'연결 끊김 — 인터넷 확인'; });
   const b=document.getElementById('offBanner'); if(b) b.style.display=ok?'none':'block'; }
+function escapeHtml(s){ return (s+'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-let prevRound=null;
 if(!fbOK){ show('notice'); }
 else{
   show('pickTeam');
   db.ref('.info/connected').on('value', s=>setConn(s.val()===true));
-  db.ref('round').on('value', s=>{ const nr=(s.val()==null?0:s.val()); const changed=(prevRound!==null && nr!==prevRound); round=nr; prevRound=nr;
-    if(document.getElementById('game').classList.contains('on')){ enterRound(); if(changed) ptoast('다음 라운드로 넘어갔어요!'); } });
-  db.ref('teams').on('value', s=>{ teams = s.val()||[]; renderTeams(); });
+  db.ref('teams').on('value', s=>{ teams=s.val()||[]; renderTeams(); });
+  db.ref('active').on('value', s=>{ active=s.val()||null; route(); });
 }
-document.getElementById('slotBack').onclick=()=>show('pickTeam');
 
 function renderTeams(){
   const g=document.getElementById('teamGrid'); g.innerHTML='';
   if(!teams.length){ g.innerHTML='<div class="footer-note">운영자가 조를 설정하면 여기 나타나요…</div>'; return; }
-  teams.forEach((t,i)=>{ const b=document.createElement('div'); b.className='opt'; b.textContent=t; b.onclick=()=>{ myTeam=i; document.getElementById('slotTeamLbl').textContent=t; renderSlots(); show('pickSlot'); }; g.appendChild(b); });
+  teams.forEach((t,i)=>{ const b=document.createElement('div'); b.className='opt'; b.textContent=t;
+    b.onclick=()=>{ myTeam=i; mySlot=null;
+      document.getElementById('gTeam').textContent=t; document.getElementById('wTeam').textContent=t; route(); }; g.appendChild(b); });
 }
 function renderSlots(){
+  document.getElementById('slotTeamLbl').textContent=teams[myTeam]||'○조';
   const g=document.getElementById('slotGrid'); g.innerHTML='';
-  SLOTS.forEach((s,i)=>{ const b=document.createElement('div'); b.className='opt'; b.innerHTML=`<span class="ic">${s.ic}</span><span class="nm">${s.nm} 힌트</span><span class="no">${i+1}번</span>`; b.onclick=()=>{ mySlot=i; startGame(); }; g.appendChild(b); });
+  SLOTS.forEach((s,i)=>{ const b=document.createElement('div'); b.className='opt'; b.innerHTML=`<span class="ic">${s.ic}</span><span class="nm">${s.nm} 힌트</span><span class="no">${i+1}번</span>`; b.onclick=()=>{ mySlot=i; route(); }; g.appendChild(b); });
 }
-function startGame(){
-  document.getElementById('gTeam').textContent=teams[myTeam];
-  document.getElementById('gSlot').textContent=`${SLOTS[mySlot].ic} ${SLOTS[mySlot].nm}`;
-  show('game'); enterRound();
-}
-document.getElementById('changeBtn').onclick=()=>{ if(subRef){subRef.off();subRef=null;} show('pickTeam'); };
+function leaveToTeams(){ if(ansRef){ansRef.off();ansRef=null;} myTeam=null; mySlot=null; curKey=null; show('pickTeam'); }
+document.getElementById('slotBack').onclick=leaveToTeams;
+document.getElementById('changeBtn').onclick=leaveToTeams;
+document.getElementById('changeBtn2').onclick=leaveToTeams;
 
-function enterRound(){
-  renderHint();
-  document.getElementById('ansInput').value='';
-  document.getElementById('subState').textContent='';
-  // 이 조의 이번 라운드 제출 상태 구독
-  if(subRef){ subRef.off(); }
-  subRef = db.ref('submissions/'+round+'/'+myTeam);
-  subRef.on('value', s=>{ const v=s.val(); const ss=document.getElementById('subState'); ss.classList.remove('err');
-    if(v&&v.answer){ ss.innerHTML=`✅ 우리 조 제출: <b>${escapeHtml(v.answer)}</b>${v.by?` <span style="color:#a08a6a;font-weight:700">(${escapeHtml(v.by)} 힌트)</span>`:''}`; } else { ss.textContent=''; } });
+function route(){
+  if(myTeam==null) return;                              // 조 선택 전
+  const a=active;
+  if(!a || !a.open || !a.game){ if(ansRef){ansRef.off();ansRef=null;} curKey=null; show('waiting'); return; }
+  if(a.game==='c3' && mySlot==null){ renderSlots(); show('pickSlot'); return; }
+  enterStage();
 }
-function renderHint(){
-  const d=ROUNDS[round]||ROUNDS[0], slot=SLOTS[mySlot];
-  if(d.practice){ document.getElementById('rLbl').innerHTML='<span class="pchip">연습</span>'; document.getElementById('rBig').textContent='🍜 연습 라운드'; }
-  else{ document.getElementById('rLbl').textContent='ROUND'; document.getElementById('rBig').textContent=`${realNum(round)} / ${realTotal()}`; }
+function enterStage(){
+  const a=active; show('game');
+  document.getElementById('gTeam').textContent=teams[myTeam]||'○조';
+  const key=a.game+'_'+a.idx, changed=(curKey!==null && curKey!==key);
+  document.getElementById('ansInput').value=''; document.getElementById('subState').textContent='';
+  if(ansRef){ ansRef.off(); }
+  ansRef = db.ref('answers/'+a.game+'/'+a.idx+'/'+myTeam);
+  ansRef.on('value', s=>{ const v=s.val(); const ss=document.getElementById('subState'); ss.classList.remove('err');
+    if(v&&v.answer){ ss.innerHTML=`✅ 우리 조 제출: <b>${escapeHtml(v.answer)}</b>`; } else { ss.textContent=''; } });
+  const hintCard=document.getElementById('hintCard'), gen=document.getElementById('genPrompt'), gSlot=document.getElementById('gSlot');
+  if(a.game==='c3'){
+    const d=ROUNDS[a.idx]||ROUNDS[0], slot=SLOTS[mySlot];
+    gSlot.style.display=''; gSlot.textContent=`${slot.ic} ${slot.nm}`;
+    document.getElementById('rLbl').innerHTML = d.practice?'<span class="pchip">연습</span>':'ROUND';
+    document.getElementById('rBig').textContent = d.practice?'🍜 연습':`${realNum(a.idx)} / ${realTotal()}`;
+    hintCard.style.display=''; gen.style.display='none';
+    renderHint(d, slot);
+  } else {
+    const gi=GAMEINFO[a.game]||{ic:'❓',t:'답을 제출하세요',s:''};
+    gSlot.style.display='none';
+    document.getElementById('rLbl').textContent='지금 문제';
+    document.getElementById('rBig').textContent=gameLabelKo(a.game);
+    hintCard.style.display='none'; gen.style.display='flex';
+    gen.innerHTML=`<div class="gpic">${gi.ic}</div><div class="gpt">${gi.t}</div><div class="gps">${gi.s}</div>`;
+  }
+  if(changed) ptoast('새 문제가 열렸어요!');
+  curKey=key;
+}
+function renderHint(d, slot){
   document.getElementById('cardTag').textContent=`${mySlot+1}번 · ${slot.nm} 힌트`;
   const area=document.getElementById('hintArea'); const card=area.closest('.card');
   card.style.animation='none'; void card.offsetWidth; card.style.animation='';
@@ -269,17 +312,17 @@ function renderHint(){
   area.innerHTML=html;
 }
 function submitAnswer(){
+  const a=active; if(!a || !a.open || !a.game) return;
   const ss=document.getElementById('subState');
   const v=document.getElementById('ansInput').value.trim();
-  if(!v){ ss.classList.add('err'); ss.textContent='정답을 먼저 입력해 주세요'; clearTimeout(ss._t); ss._t=setTimeout(()=>{ss.classList.remove('err');ss.textContent='';},1600); return; }
+  if(!v){ ss.classList.add('err'); ss.textContent='답을 먼저 입력해 주세요'; clearTimeout(ss._t); ss._t=setTimeout(()=>{ss.classList.remove('err');ss.textContent='';},1600); return; }
   ss.classList.remove('err'); ss.textContent='제출 중…';
-  db.ref('submissions/'+round+'/'+myTeam).set({ answer:v, name:teams[myTeam], by:SLOTS[mySlot].nm, ts:firebase.database.ServerValue.TIMESTAMP })
-    .catch(()=>{ ss.classList.add('err'); ss.textContent='제출 실패 — 인터넷 확인 후 다시 제출'; });
+  db.ref('answers/'+a.game+'/'+a.idx+'/'+myTeam).set({ answer:v, name:teams[myTeam], ts:firebase.database.ServerValue.TIMESTAMP })
+    .catch(()=>{ ss.classList.add('err'); ss.textContent='제출 실패 — 인터넷 확인 후 다시'; });
   document.getElementById('ansInput').blur();
 }
 document.getElementById('ansBtn').onclick=submitAnswer;
 document.getElementById('ansInput').addEventListener('keydown',e=>{ if(e.key==='Enter')submitAnswer(); });
-function escapeHtml(s){ return (s+'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 </script>
 </body>
 </html>
