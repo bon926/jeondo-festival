@@ -1,16 +1,13 @@
 /* ============================================================
-   ★ 교회 Firebase 설정 — 여기 한 곳만 채우면 콘솔·폰 둘 다 적용돼요 ★
+   ★ 교회 Firebase 설정 (Bon PJ 프로젝트) ★
+   이 앱은 Realtime Database 만 쓰므로 databaseURL 만 있으면 됩니다.
+   (apiKey / appId 등 웹앱 등록 값은 필요 없어요)
 
-   넣는 법:
-   1) https://console.firebase.google.com 에서 프로젝트 만들기
-   2) Realtime Database 켜기(테스트 모드) → ⚠️ 행사 1~2일 전에! (30일 후 자동 잠김)
-   3) 프로젝트 설정 → '내 앱'(웹) → firebaseConfig 값을 아래 "여기에-붙여넣기" 자리에 복사
-   ※ databaseURL 이 반드시 있어야 해요 (예: https://내프로젝트-default-rtdb.firebasedatabase.app)
+   ⚠️ 실시간 제출이 되려면 Firebase 콘솔의
+      Realtime Database → 규칙(Rules) 이 열려 있고 "게시(Publish)" 돼 있어야 합니다.
 ============================================================ */
 window.FIREBASE_CONFIG = {
-  apiKey: "여기에-붙여넣기",
-  authDomain: "여기에-붙여넣기",
-  databaseURL: "여기에-붙여넣기",
-  projectId: "여기에-붙여넣기",
-  appId: "여기에-붙여넣기"
+  databaseURL: "https://bon-pj-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "bon-pj",
+  authDomain: "bon-pj.firebaseapp.com"
 };
