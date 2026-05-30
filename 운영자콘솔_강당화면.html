@@ -199,6 +199,27 @@
   .finale-btns{margin-top:30px;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
   .confetti{position:fixed;top:-24px;width:11px;height:15px;z-index:301;pointer-events:none;border-radius:2px;animation:cfall linear forwards;}
   @keyframes cfall{to{transform:translateY(110vh) rotate(760deg);}}
+
+  /* ---------- 수동 점수 조정(모든 화면에서) ---------- */
+  .manual{display:none;position:fixed;inset:0;z-index:280;background:rgba(20,12,4,.55);align-items:center;justify-content:center;padding:18px;}
+  .manual.on{display:flex;}
+  .manual-card{background:var(--card);border:2px solid var(--line);border-radius:20px;padding:20px;width:min(560px,100%);max-height:92vh;overflow:auto;box-shadow:0 16px 40px rgba(0,0,0,.4);}
+  .manual-head{display:flex;justify-content:space-between;align-items:center;}
+  .manual-head b{font-size:18px;}
+  .mclose{background:var(--paper);border:1.5px solid var(--line);border-radius:50%;width:32px;height:32px;font-weight:900;cursor:pointer;color:#8a7150;font-size:16px;}
+  .mlabel{font-size:12px;font-weight:900;color:#8a7150;margin:15px 0 7px;letter-spacing:1px;}
+  .mteams,.mcorners,.mamts{display:flex;gap:7px;flex-wrap:wrap;}
+  .mteams button,.mcorners button{border:2px solid var(--line);background:var(--paper);border-radius:12px;padding:9px 13px;font-weight:900;cursor:pointer;font-size:14px;}
+  .mteams button.sel,.mcorners button.sel{background:var(--tomato);color:#fff;border-color:var(--tomato);}
+  .mamts button{flex:1;min-width:56px;border:none;border-radius:12px;padding:14px 0;font-weight:900;cursor:pointer;font-size:16px;}
+  .mamts button.minus{background:#fbe3e3;color:#c0392b;}
+  .mamts button.plus{background:#e7f0df;color:var(--leaf);}
+  .mdirect{display:flex;gap:8px;margin-top:10px;}
+  .mdirect input{flex:1;border:2px solid var(--line);border-radius:12px;padding:12px;font-weight:800;font-size:15px;background:var(--paper);color:var(--ink);}
+  .mdirect input:focus{outline:2px solid var(--tangerine);}
+  .mdirect button{background:var(--ink);color:#fff;border:none;border-radius:12px;padding:0 20px;font-weight:900;cursor:pointer;font-size:15px;}
+  .mcurrent{margin-top:14px;background:var(--paper);border:1.5px solid var(--line);border-radius:14px;padding:12px 14px;font-weight:800;font-size:14px;line-height:1.7;color:#5b4327;}
+  .mcurrent b{color:var(--tomato);}
 </style>
 </head>
 <body>
@@ -213,6 +234,7 @@
   <span class="spacer"></span>
   <button data-go="score" class="scorebtn">🏆 점수판</button>
   <button data-go="agg" class="scorebtn">📊 집계</button>
+  <button id="manualBtn" class="scorebtn" title="모든 화면에서 점수를 수동으로 주거나 고치기">✏️ 수동</button>
   <span class="conn" id="navConn" title="실시간 연결 상태" style="margin-left:8px;color:var(--paper)"><span class="dot"></span></span>
 </nav>
 
@@ -417,6 +439,26 @@
   <div class="finale-btns">
     <button class="btn amber" id="finaleNext">다음 ▶ <span style="opacity:.7">(Space)</span></button>
     <button class="btn ghost" id="finaleClose">닫기</button>
+  </div>
+</div>
+
+<div class="manual" id="manualPanel">
+  <div class="manual-card">
+    <div class="manual-head"><b>✏️ 수동 점수 조정</b><button class="mclose" id="manualClose">✕</button></div>
+    <div class="mlabel">조 선택</div>
+    <div class="mteams" id="mTeams"></div>
+    <div class="mlabel">기록할 칸</div>
+    <div class="mcorners" id="mCorners"></div>
+    <div class="mlabel">점수 가감 (선택한 조·칸에 즉시 적용)</div>
+    <div class="mamts">
+      <button class="minus" data-d="-50">-50</button><button class="minus" data-d="-10">-10</button><button class="minus" data-d="-5">-5</button>
+      <button class="plus" data-d="5">+5</button><button class="plus" data-d="10">+10</button><button class="plus" data-d="50">+50</button>
+    </div>
+    <div class="mdirect">
+      <input id="mInput" type="number" inputmode="numeric" placeholder="직접 입력 (예: 25 또는 -15)">
+      <button id="mApply">적용</button>
+    </div>
+    <div class="mcurrent" id="mCurrent"></div>
   </div>
 </div>
 
@@ -831,6 +873,35 @@ function confettiBurst(){
 document.getElementById('finaleOpen').onclick=openFinale;
 document.getElementById('finaleNext').onclick=finaleNext;
 document.getElementById('finaleClose').onclick=()=>{ document.getElementById('finale').style.display='none'; };
+
+/* =================== 수동 점수 조정(모든 화면에서 버튼으로) =================== */
+let manualState={team:0, corner:'adj'};
+function openManual(){ if(manualState.team>=state.teams.length) manualState.team=0; renderManual(); document.getElementById('manualPanel').classList.add('on'); }
+function closeManual(){ document.getElementById('manualPanel').classList.remove('on'); }
+function renderManual(){
+  const tw=document.getElementById('mTeams'); tw.innerHTML='';
+  state.teams.forEach((t,i)=>{ const b=document.createElement('button'); b.textContent=t; if(i===manualState.team)b.classList.add('sel');
+    b.onclick=()=>{manualState.team=i; renderManual();}; tw.appendChild(b); });
+  const cw=document.getElementById('mCorners'); cw.innerHTML='';
+  CORNERS.forEach(c=>{ const b=document.createElement('button'); b.textContent=c.label; if(c.k===manualState.corner)b.classList.add('sel');
+    b.onclick=()=>{manualState.corner=c.k; renderManual();}; cw.appendChild(b); });
+  renderMCurrent();
+}
+function renderMCurrent(){
+  const i=manualState.team;
+  const parts=CORNERS.map(c=>`${c.label} ${state.scores[c.k][i]||0}`).join(' · ');
+  document.getElementById('mCurrent').innerHTML=`<b>${state.teams[i]}</b> — ${parts}<br>합계 <b>${teamTotal(i)}점</b>`;
+}
+function manualApply(d){ if(!d)return; const i=manualState.team, k=manualState.corner;
+  state.scores[k][i]=(state.scores[k][i]||0)+d; save();
+  if(activeScreen==='score')renderScore(); if(activeScreen==='agg')renderAgg();
+  renderMCurrent(); toast(`${state.teams[i]} · ${cornerLabel(k)} ${d>0?'+':''}${d}점`); }
+document.getElementById('manualBtn').onclick=openManual;
+document.getElementById('manualClose').onclick=closeManual;
+document.getElementById('manualPanel').addEventListener('click',e=>{ if(e.target.id==='manualPanel')closeManual(); });
+document.querySelectorAll('#manualPanel .mamts button').forEach(b=>b.onclick=()=>manualApply(+b.dataset.d));
+document.getElementById('mApply').onclick=()=>{ const el=document.getElementById('mInput'); const v=parseInt(el.value,10); if(!isNaN(v)){ manualApply(v); el.value=''; } };
+document.getElementById('mInput').addEventListener('keydown',e=>{ if(e.key==='Enter')document.getElementById('mApply').click(); });
 
 /* =================== 키보드 =================== */
 document.addEventListener('keydown',e=>{ if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
