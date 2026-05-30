@@ -43,7 +43,7 @@
       <h2>우리 가족 답안 제출</h2>
       <p>폰으로 우리 가족을 고르고,<br>진행 화면 문제에 답을 제출하는 곳이에요.</p>
       <div id="qrbox"></div>
-      <a class="btn amber" href="3부_요리맞추기_폰힌트.html">폰으로 들어가기 ›</a>
+      <a class="btn amber" href="player.html">폰으로 들어가기 ›</a>
     </div>
   </div>
 
@@ -52,7 +52,7 @@
 
 <script>
   // 폰 제출 페이지의 절대 URL을 만들어 QR로 표시
-  var phoneUrl = new URL('3부_요리맞추기_폰힌트.html', location.href).href;
+  var phoneUrl = new URL('player.html', location.href).href;
   try{
     new QRCode(document.getElementById('qrbox'), { text: phoneUrl, width: 200, height: 200,
       colorDark:'#2b1d12', colorLight:'#ffffff', correctLevel: QRCode.CorrectLevel.M });
