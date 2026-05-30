@@ -43,7 +43,6 @@
       <h2>우리 가족 답안 제출</h2>
       <p>폰으로 우리 가족을 고르고,<br>진행 화면 문제에 답을 제출하는 곳이에요.</p>
       <div id="qrbox"></div>
-      <div class="qrurl" id="qrurl"></div>
       <a class="btn amber" href="3부_요리맞추기_폰힌트.html">폰으로 들어가기 ›</a>
     </div>
   </div>
@@ -52,9 +51,8 @@
   <div class="foot">파일을 그대로 열어도 되지만, Netlify 등에 올리면 짧은 링크/QR로 나눠주기 편해요.</div>
 
 <script>
-  // 폰 제출 페이지의 절대 URL을 만들어 QR + 링크로 표시
+  // 폰 제출 페이지의 절대 URL을 만들어 QR로 표시
   var phoneUrl = new URL('3부_요리맞추기_폰힌트.html', location.href).href;
-  document.getElementById('qrurl').textContent = phoneUrl;
   try{
     new QRCode(document.getElementById('qrbox'), { text: phoneUrl, width: 200, height: 200,
       colorDark:'#2b1d12', colorLight:'#ffffff', correctLevel: QRCode.CorrectLevel.M });
@@ -63,7 +61,7 @@
   }
   // file:// 로 직접 열면 QR이 file 경로라 폰에서 못 열려요 — 안내
   if(location.protocol === 'file:'){
-    document.getElementById('qrurl').insertAdjacentHTML('afterend',
+    document.getElementById('qrbox').insertAdjacentHTML('afterend',
       '<div style="font-size:11px;color:#c0392b;margin-top:6px;max-width:240px">⚠️ 파일을 직접 연 상태예요. QR은 호스팅(Netlify 등)에 올린 뒤 써야 폰에서 열려요.</div>');
   }
 </script>
