@@ -35,6 +35,17 @@
   .nav button.active{background:var(--tomato);}
   .nav .spacer{flex:1;}
   .nav .scorebtn{background:var(--tangerine);color:#3a2604;}
+  /* 모바일: 나브바를 한 줄로(넘치면 가로 스크롤), 크기 축소 + '운영자 콘솔' 숨김 */
+  @media (max-width:680px){
+    .nav{flex-wrap:nowrap;overflow-x:auto;gap:5px;padding:8px 10px;-webkit-overflow-scrolling:touch;}
+    .nav::-webkit-scrollbar{display:none;}
+    .nav>*{flex-shrink:0;}
+    .nav .logo{font-size:12px;margin-right:4px;white-space:nowrap;}
+    .nav .logo-sub{display:none;}
+    .nav button{padding:7px 11px;font-size:12px;white-space:nowrap;}
+    .nav .spacer{display:none;}
+    #navConn{margin-left:2px;}
+  }
 
   .stage{flex:1;padding:26px clamp(16px,4vw,48px) 60px;position:relative;}
   .screen{display:none;animation:fade .3s ease;}
@@ -193,7 +204,7 @@
 <body>
 
 <nav class="nav">
-  <span class="logo">전도축제<span class="dot">·</span>운영자 콘솔</span>
+  <span class="logo">전도축제<span class="dot">·</span><span class="logo-sub">운영자 콘솔</span></span>
   <button data-go="home" class="active">🏠 홈</button>
   <button data-go="c1">① 장소</button>
   <button data-go="c2">② 인물</button>
