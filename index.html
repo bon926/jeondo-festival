@@ -47,9 +47,6 @@
     </div>
   </div>
 
-  <div class="note">💡 처음이라면 <b>README_먼저읽기.md</b> 를 먼저 보세요. 실시간 제출(3부)을 쓰려면 <b>firebase-config.js</b> 에 Firebase 설정을 넣고, 인터넷이 되는 곳에서 진행해야 해요.</div>
-  <div class="foot">파일을 그대로 열어도 되지만, Netlify 등에 올리면 짧은 링크/QR로 나눠주기 편해요.</div>
-
 <script>
   // 폰 제출 페이지의 절대 URL을 만들어 QR로 표시
   var phoneUrl = new URL('player.html', location.href).href;
@@ -58,11 +55,6 @@
       colorDark:'#2b1d12', colorLight:'#ffffff', correctLevel: QRCode.CorrectLevel.M });
   }catch(e){
     document.getElementById('qrbox').innerHTML = '<div style="font-size:12px;color:#c0392b;padding:20px;width:200px">QR 생성 실패<br>(인터넷 연결 후 새로고침)</div>';
-  }
-  // file:// 로 직접 열면 QR이 file 경로라 폰에서 못 열려요 — 안내
-  if(location.protocol === 'file:'){
-    document.getElementById('qrbox').insertAdjacentHTML('afterend',
-      '<div style="font-size:11px;color:#c0392b;margin-top:6px;max-width:240px">⚠️ 파일을 직접 연 상태예요. QR은 호스팅(Netlify 등)에 올린 뒤 써야 폰에서 열려요.</div>');
   }
 </script>
 </body>
