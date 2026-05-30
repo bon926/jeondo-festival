@@ -91,6 +91,7 @@
   .genprompt .gpic{font-size:54px;line-height:1.1;}
   .genprompt .gpt{font-size:23px;font-weight:900;margin-top:12px;color:var(--ink);}
   .genprompt .gps{font-size:14px;color:#8a7150;font-weight:700;margin-top:10px;line-height:1.6;}
+  .tedit{background:var(--paper);border:1.5px solid var(--line);border-radius:10px;padding:6px 10px;font-size:15px;cursor:pointer;flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -111,21 +112,21 @@
   <section class="scr" id="pickTeam">
     <div class="brand">
       <div class="kicker">청년부 전도축제 · 답안 제출</div>
-      <h1>우리 조 답안지 ✍️</h1>
-      <p>운영자가 문제를 열면 여기에 떠요.<br>의논해서 <b>조 대표가 답을 제출</b>하세요!</p>
+      <h1>우리 가족 답안지 ✍️</h1>
+      <p>운영자가 문제를 열면 여기에 떠요.<br>의논해서 <b>가족 대표가 답을 제출</b>하세요!</p>
     </div>
-    <div class="step-q">① 우리 조를 골라주세요</div>
+    <div class="step-q">① 우리 가족을 골라주세요 (이름은 ✏️로 수정 가능)</div>
     <div class="opts teamcol" id="teamGrid"></div>
     <div class="conn" id="conn1"><span class="dot"></span><span>연결 중…</span></div>
   </section>
 
   <!-- 슬롯 선택 -->
   <section class="scr" id="pickSlot">
-    <button class="backlink" id="slotBack">‹ 조 다시 고르기</button>
+    <button class="backlink" id="slotBack">‹ 가족 다시 고르기</button>
     <div class="brand" style="margin-bottom:10px">
-      <div class="kicker" id="slotTeamLbl">○조</div>
+      <div class="kicker" id="slotTeamLbl">○가족</div>
       <h1 style="font-size:24px">내 힌트 정하기 🧩</h1>
-      <p style="font-size:13px">조원끼리 1~6번을 겹치지 않게 나눠 맡아요</p>
+      <p style="font-size:13px">가족끼리 1~6번을 겹치지 않게 나눠 맡아요</p>
     </div>
     <div class="step-q">② 나는 몇 번 힌트?</div>
     <div class="opts" id="slotGrid"></div>
@@ -135,8 +136,8 @@
   <!-- 대기 -->
   <section class="scr" id="waiting">
     <div class="topbar">
-      <span class="myteam" id="wTeam">○조</span>
-      <button class="change" id="changeBtn2">조 변경</button>
+      <span class="myteam" id="wTeam">○가족</span>
+      <button class="change" id="changeBtn2">가족 변경</button>
     </div>
     <div class="notice" style="flex:1"><div class="box">
       <h2>⏳ 잠시만요!</h2>
@@ -147,9 +148,9 @@
   <!-- 게임(답안 제출) -->
   <section class="scr" id="game">
     <div class="topbar">
-      <span class="myteam" id="gTeam">○조</span>
+      <span class="myteam" id="gTeam">○가족</span>
       <span class="myslot" id="gSlot" style="display:none">🧺 재료</span>
-      <button class="change" id="changeBtn">조 변경</button>
+      <button class="change" id="changeBtn">가족 변경</button>
     </div>
 
     <div class="round-line">
@@ -164,11 +165,11 @@
     <div class="genprompt" id="genPrompt" style="display:none"></div>
 
     <div class="submit">
-      <input id="ansInput" placeholder="우리 조 답 입력" autocomplete="off">
+      <input id="ansInput" placeholder="우리 가족 답 입력" autocomplete="off">
       <button id="ansBtn">제출</button>
     </div>
     <div class="sub-state" id="subState"></div>
-    <div class="footer-note">제출은 <b>조에 하나</b>예요(누가 내든 같은 칸). 다시 내면 덮어써요.<br>운영자가 다음 문제로 넘기면 화면이 <b>자동으로</b> 바뀌어요.</div>
+    <div class="footer-note">제출은 <b>가족에 하나</b>예요(누가 내든 같은 칸). 다시 내면 덮어써요.<br>운영자가 다음 문제로 넘기면 화면이 <b>자동으로</b> 바뀌어요.</div>
   </section>
 
   <div class="ptoast" id="ptoast"></div>
@@ -240,19 +241,24 @@ if(!fbOK){ show('notice'); }
 else{
   show('pickTeam');
   db.ref('.info/connected').on('value', s=>setConn(s.val()===true));
-  db.ref('teams').on('value', s=>{ teams=s.val()||[]; renderTeams(); });
+  db.ref('teams').on('value', s=>{ teams=s.val()||[]; renderTeams();
+    if(myTeam!=null && teams[myTeam]){ document.getElementById('gTeam').textContent=teams[myTeam]; document.getElementById('wTeam').textContent=teams[myTeam]; } });
   db.ref('active').on('value', s=>{ active=s.val()||null; route(); });
 }
 
 function renderTeams(){
   const g=document.getElementById('teamGrid'); g.innerHTML='';
-  if(!teams.length){ g.innerHTML='<div class="footer-note">운영자가 조를 설정하면 여기 나타나요…</div>'; return; }
-  teams.forEach((t,i)=>{ const b=document.createElement('div'); b.className='opt'; b.textContent=t;
-    b.onclick=()=>{ myTeam=i; mySlot=null;
-      document.getElementById('gTeam').textContent=t; document.getElementById('wTeam').textContent=t; route(); }; g.appendChild(b); });
+  if(!teams.length){ g.innerHTML='<div class="footer-note">운영자가 가족을 설정하면 여기 나타나요…</div>'; return; }
+  teams.forEach((t,i)=>{ const b=document.createElement('div'); b.className='opt';
+    b.style.display='flex'; b.style.alignItems='center'; b.style.gap='8px';
+    b.innerHTML=`<span style="flex:1">${escapeHtml(t)}</span><button class="tedit" data-i="${i}" title="이름 바꾸기">✏️</button>`;
+    b.onclick=()=>{ myTeam=i; mySlot=null; document.getElementById('gTeam').textContent=t; document.getElementById('wTeam').textContent=t; route(); };
+    b.querySelector('.tedit').onclick=(e)=>{ e.stopPropagation(); const nn=prompt('우리 가족 이름을 바꿔요', teams[i]);
+      if(nn!=null && nn.trim()){ const arr=teams.slice(); arr[i]=nn.trim().slice(0,12); db.ref('teams').set(arr); } };
+    g.appendChild(b); });
 }
 function renderSlots(){
-  document.getElementById('slotTeamLbl').textContent=teams[myTeam]||'○조';
+  document.getElementById('slotTeamLbl').textContent=teams[myTeam]||'○가족';
   const g=document.getElementById('slotGrid'); g.innerHTML='';
   SLOTS.forEach((s,i)=>{ const b=document.createElement('div'); b.className='opt'; b.innerHTML=`<span class="ic">${s.ic}</span><span class="nm">${s.nm} 힌트</span><span class="no">${i+1}번</span>`; b.onclick=()=>{ mySlot=i; route(); }; g.appendChild(b); });
 }
@@ -270,13 +276,13 @@ function route(){
 }
 function enterStage(){
   const a=active; show('game');
-  document.getElementById('gTeam').textContent=teams[myTeam]||'○조';
+  document.getElementById('gTeam').textContent=teams[myTeam]||'○가족';
   const key=a.game+'_'+a.idx, changed=(curKey!==null && curKey!==key);
   document.getElementById('ansInput').value=''; document.getElementById('subState').textContent='';
   if(ansRef){ ansRef.off(); }
   ansRef = db.ref('answers/'+a.game+'/'+a.idx+'/'+myTeam);
   ansRef.on('value', s=>{ const v=s.val(); const ss=document.getElementById('subState'); ss.classList.remove('err');
-    if(v&&v.answer){ ss.innerHTML=`✅ 우리 조 제출: <b>${escapeHtml(v.answer)}</b>`; } else { ss.textContent=''; } });
+    if(v&&v.answer){ ss.innerHTML=`✅ 우리 가족 제출: <b>${escapeHtml(v.answer)}</b>`; } else { ss.textContent=''; } });
   const hintCard=document.getElementById('hintCard'), gen=document.getElementById('genPrompt'), gSlot=document.getElementById('gSlot');
   if(a.game==='c3'){
     const d=ROUNDS[a.idx]||ROUNDS[0], slot=SLOTS[mySlot];
