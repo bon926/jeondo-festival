@@ -224,6 +224,8 @@
   .c4custom input{width:56px;border:2px solid var(--line);border-radius:10px;padding:9px 6px;font-weight:800;font-size:15px;text-align:center;background:var(--paper);color:var(--ink);}
   .c4custom input:focus{outline:2px solid var(--tangerine);}
   .c4custom span{font-weight:900;color:#8a7150;}
+  table.agg select{padding:7px 8px;border:1.5px solid var(--line);border-radius:9px;font-weight:800;font-size:13px;background:var(--paper);color:var(--ink);max-width:96px;}
+  #c5result .agg td{font-size:13.5px;}
 </style>
 </head>
 <body>
@@ -235,6 +237,7 @@
   <button data-go="c2">② 인물</button>
   <button data-go="c3">③ 요리</button>
   <button data-go="c4">④ 소개</button>
+  <button data-go="c5">⑤ 예측</button>
   <span class="spacer"></span>
   <button data-go="score" class="scorebtn">🏆 점수판</button>
   <button data-go="agg" class="scorebtn">📊 집계</button>
@@ -440,6 +443,31 @@
     </div>
   </section>
 
+  <!-- ============ CORNER 5 : 예측 보너스 ============ -->
+  <section class="screen" id="c5">
+    <div class="kicker">CORNER 05 · 보너스</div>
+    <h2 class="title">순위 예측 보너스 🔮</h2>
+    <p class="sub">게임 시작 전, 각 조가 ①~④ 게임의 <b>우승 조</b>를 예측해요. 행사 끝에 적중한 개수만큼 보너스 점수를 받습니다!</p>
+    <div class="howto">진행 — (게임 전) 각 조가 부르는 예측을 표에 입력 → (모든 게임 후) <b>결과 채점</b>을 누르면 실제 우승조와 비교해 보너스가 ⑤칸에 자동 기록돼요. 다시 눌러도 안전(덮어쓰기).</div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <b style="font-size:16px">예측 입력 — 각 조가 찍은 '게임별 우승조'</b>
+        <div class="row" style="gap:6px;align-items:center">
+          <span style="font-size:13px;color:#8a7150;font-weight:800">적중 1개당</span>
+          <select id="c5pts" class="h4" style="width:auto;padding:8px 10px"><option value="10">10점</option><option value="20" selected>20점</option><option value="30">30점</option></select>
+        </div>
+      </div>
+      <div class="agg-wrap" id="c5predHost" style="margin-top:12px"></div>
+      <p class="help">셀에서 그 조가 우승할 거라 예상한 조를 고르면 자동 저장돼요. 안 찍은 칸은 '—'로 두면 됩니다.</p>
+    </div>
+
+    <div class="row" style="margin-top:14px;justify-content:center">
+      <button class="btn" id="c5score">🔮 결과 채점 & 보너스 지급</button>
+    </div>
+    <div id="c5result" style="margin-top:16px"></div>
+  </section>
+
 </main>
 
 <div class="finale" id="finale">
@@ -491,11 +519,12 @@ try{ if(FIREBASE_CONFIG.databaseURL && FIREBASE_CONFIG.databaseURL.indexOf('여�
 
 /* =================== 공통 =================== */
 const LS='evfest2026';
-const CORNERS=[ {k:'c1',label:'①장소'}, {k:'c2',label:'②인물'}, {k:'c3',label:'③요리'}, {k:'c4',label:'④소개'}, {k:'adj',label:'조정'} ];
+const CORNERS=[ {k:'c1',label:'①장소'}, {k:'c2',label:'②인물'}, {k:'c3',label:'③요리'}, {k:'c4',label:'④소개'}, {k:'c5',label:'⑤예측'}, {k:'adj',label:'조정'} ];
 function blankScores(n){ const o={}; CORNERS.forEach(c=>o[c.k]=new Array(n).fill(0)); return o; }
-function defaultState(){ const teams=["1조","2조","3조","4조","5조","6조"]; return {teams, scores:blankScores(teams.length)}; }
+function defaultState(){ const teams=["1조","2조","3조","4조","5조","6조"]; return {teams, scores:blankScores(teams.length), predictions:{}}; }
 
 let state = migrate(load()) || defaultState();
+if(!state.predictions) state.predictions={};   // ⑤예측: predictions[예측조][게임키]=우승예상조
 function load(){ try{return JSON.parse(localStorage.getItem(LS));}catch(e){return null;} }
 function migrate(s){
   if(!s) return null;
@@ -504,14 +533,14 @@ function migrate(s){
   if(s.scores){ CORNERS.forEach(c=>{ if(!Array.isArray(s.scores[c.k])) s.scores[c.k]=new Array(n).fill(0); else while(s.scores[c.k].length<n) s.scores[c.k].push(0); }); }
   return s;
 }
-function save(){ try{localStorage.setItem(LS,JSON.stringify({teams:state.teams,scores:state.scores}));}catch(e){} if(fbOK){ try{db.ref('teams').set(state.teams);}catch(e){} } }
+function save(){ try{localStorage.setItem(LS,JSON.stringify({teams:state.teams,scores:state.scores,predictions:state.predictions}));}catch(e){} if(fbOK){ try{db.ref('teams').set(state.teams);}catch(e){} } }
 function teamTotal(i){ return CORNERS.reduce((sum,c)=>sum+(state.scores[c.k][i]||0),0); }
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),1600); }
 
 let activeScreen='home';
 function go(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
   document.querySelectorAll('.nav button[data-go]').forEach(b=>b.classList.toggle('active',b.dataset.go===id));
-  if(id==='score')renderScore(); if(id==='agg')renderAgg(); if(id==='home')renderTeamChips(); if(id==='c3')showDish(); activeScreen=id; }
+  if(id==='score')renderScore(); if(id==='agg')renderAgg(); if(id==='home')renderTeamChips(); if(id==='c3')showDish(); if(id==='c5')renderC5Pred(); activeScreen=id; }
 document.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
 
 /* =================== 조 / 점수 =================== */
@@ -924,6 +953,63 @@ document.getElementById('manualPanel').addEventListener('click',e=>{ if(e.target
 document.querySelectorAll('#manualPanel .mamts button').forEach(b=>b.onclick=()=>manualApply(+b.dataset.d));
 document.getElementById('mApply').onclick=()=>{ const el=document.getElementById('mInput'); const v=parseInt(el.value,10); if(!isNaN(v)){ manualApply(v); el.value=''; } };
 document.getElementById('mInput').addEventListener('keydown',e=>{ if(e.key==='Enter')document.getElementById('mApply').click(); });
+
+/* =================== CORNER 5 : 예측 보너스 =================== */
+const C5GAMES=[{k:'c1',label:'①장소'},{k:'c2',label:'②인물'},{k:'c3',label:'③요리'},{k:'c4',label:'④소개'}];
+function renderC5Pred(){
+  const host=document.getElementById('c5predHost'); if(!host)return;
+  let html='<table class="agg"><thead><tr><th class="lft">예측한 조</th>';
+  C5GAMES.forEach(g=>html+=`<th>${g.label} 우승?</th>`);
+  html+='</tr></thead><tbody>';
+  state.teams.forEach((t,pi)=>{
+    html+=`<tr><td class="lft">${escapeHtml(t)}</td>`;
+    C5GAMES.forEach(g=>{
+      const cur=(state.predictions[pi]||{})[g.k];
+      html+=`<td><select data-pi="${pi}" data-gk="${g.k}"><option value="">—</option>`;
+      state.teams.forEach((tt,ti)=>{ html+=`<option value="${ti}" ${cur===ti?'selected':''}>${escapeHtml(tt)}</option>`; });
+      html+='</select></td>';
+    });
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  host.innerHTML=html;
+  host.querySelectorAll('select').forEach(s=>s.onchange=e=>{
+    const pi=+e.target.dataset.pi, gk=e.target.dataset.gk, v=e.target.value;
+    if(!state.predictions[pi])state.predictions[pi]={};
+    if(v===''){ delete state.predictions[pi][gk]; } else { state.predictions[pi][gk]=+v; }
+    save();
+  });
+}
+function gameWinners(gk){ let max=-1; state.teams.forEach((t,i)=>{ const v=state.scores[gk][i]||0; if(v>max)max=v; });
+  if(max<=0)return []; const w=[]; state.teams.forEach((t,i)=>{ if((state.scores[gk][i]||0)===max)w.push(i); }); return w; }
+function c5ScoreAndAward(){
+  const pts=+document.getElementById('c5pts').value;
+  const winners={}; C5GAMES.forEach(g=>winners[g.k]=gameWinners(g.k));
+  const correct=state.teams.map((t,pi)=>{ let c=0; C5GAMES.forEach(g=>{ const pred=(state.predictions[pi]||{})[g.k];
+    if(pred!=null && pred<state.teams.length && winners[g.k].includes(pred)) c++; }); return c; });
+  state.teams.forEach((t,i)=>{ state.scores.c5[i]=correct[i]*pts; });   // 덮어쓰기(여러 번 눌러도 안전)
+  save(); if(activeScreen==='score')renderScore(); if(activeScreen==='agg')renderAgg();
+  renderC5Result(winners, correct, pts);
+  toast('예측 보너스를 채점·지급했어요');
+}
+function renderC5Result(winners, correct, pts){
+  let html='<div class="card"><b style="font-size:16px">📋 채점 결과 (적중 1개당 '+pts+'점)</b>';
+  html+='<p class="help" style="margin-top:8px">실제 우승조 — '+C5GAMES.map(g=>`${g.label}: <b>${winners[g.k].length?winners[g.k].map(i=>escapeHtml(state.teams[i])).join('·'):'(없음)'}</b>`).join(' &nbsp; ')+'</p>';
+  html+='<div class="agg-wrap" style="margin-top:10px"><table class="agg"><thead><tr><th class="lft">조</th>';
+  C5GAMES.forEach(g=>html+=`<th>${g.label} 예측</th>`);
+  html+='<th>적중</th><th class="tot">보너스</th></tr></thead><tbody>';
+  state.teams.forEach((t,pi)=>{
+    html+=`<tr><td class="lft">${escapeHtml(t)}</td>`;
+    C5GAMES.forEach(g=>{ const pred=(state.predictions[pi]||{})[g.k];
+      const has=pred!=null && pred<state.teams.length;
+      const hit=has && winners[g.k].includes(pred);
+      html+=`<td>${has?escapeHtml(state.teams[pred])+(hit?' ✅':' ✗'):'—'}</td>`; });
+    html+=`<td><b>${correct[pi]}개</b></td><td class="tot">+${correct[pi]*pts}</td></tr>`;
+  });
+  html+='</tbody></table></div></div>';
+  document.getElementById('c5result').innerHTML=html;
+}
+document.getElementById('c5score').onclick=c5ScoreAndAward;
 
 /* =================== 키보드 =================== */
 document.addEventListener('keydown',e=>{ if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA')return;
