@@ -92,6 +92,15 @@
   .genprompt .gpt{font-size:23px;font-weight:900;margin-top:12px;color:var(--ink);}
   .genprompt .gps{font-size:14px;color:#8a7150;font-weight:700;margin-top:10px;line-height:1.6;}
   .tedit{background:var(--paper);border:1.5px solid var(--line);border-radius:10px;padding:6px 10px;font-size:15px;cursor:pointer;flex-shrink:0;}
+  /* 순위 예측(⑤) */
+  .predblock{flex:1;display:flex;flex-direction:column;gap:11px;margin-top:6px;}
+  .pred-head{font-size:14.5px;color:#6f5942;font-weight:800;text-align:center;line-height:1.6;margin-bottom:2px;}
+  .pred-row{display:flex;align-items:center;gap:10px;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:11px 13px;box-shadow:0 6px 16px var(--shadow);}
+  .pred-row .pred-g{font-weight:900;font-size:17px;min-width:70px;color:var(--ink);}
+  .pred-row select{flex:1;padding:12px 10px;border-radius:12px;border:2px solid var(--line);font-size:16px;font-weight:800;background:#fff;color:var(--ink);}
+  .pred-row select:focus{outline:none;border-color:var(--tangerine);}
+  .pred-submit{margin-top:6px;background:var(--tomato);color:#fff;border:none;border-radius:16px;padding:16px;font-size:18px;font-weight:900;cursor:pointer;box-shadow:0 5px 0 #b8401f;}
+  .pred-submit:active{transform:translateY(3px);box-shadow:0 2px 0 #b8401f;}
 </style>
 </head>
 <body>
@@ -163,6 +172,7 @@
       <div class="hint-area" id="hintArea"></div>
     </div>
     <div class="genprompt" id="genPrompt" style="display:none"></div>
+    <div class="predblock" id="predBlock" style="display:none"></div>
 
     <div class="submit">
       <input id="ansInput" placeholder="우리 가족 답 입력" autocomplete="off">
@@ -283,9 +293,21 @@ function enterStage(){
   if(ansRef){ ansRef.off(); }
   ansRef = db.ref('answers/'+a.game+'/'+a.idx+'/'+myTeam);
   ansRef.on('value', s=>{ const v=s.val(); const ss=document.getElementById('subState'); ss.classList.remove('err');
-    if(v&&v.answer){ ss.innerHTML=`✅ 우리 가족 제출: <b>${escapeHtml(v.answer)}</b>`; } else { ss.textContent=''; } });
+    if(v&&v.pred){ if(!document.querySelector('#predBlock select')) buildPredBlock(); fillPredFromVal(v.pred);
+      ss.innerHTML=`✅ 우리 가족 예측 제출 완료${v.answer?` — <b>${escapeHtml(v.answer)}</b>`:''}`; }
+    else if(v&&v.answer){ ss.innerHTML=`✅ 우리 가족 제출: <b>${escapeHtml(v.answer)}</b>`; }
+    else { ss.textContent=''; } });
   const hintCard=document.getElementById('hintCard'), gen=document.getElementById('genPrompt'), gSlot=document.getElementById('gSlot');
-  if(a.game==='c3'){
+  const predBlock=document.getElementById('predBlock'), submitBox=document.querySelector('.submit');
+  if(a.game==='c5'){
+    gSlot.style.display='none';
+    document.getElementById('rLbl').textContent='보너스 게임';
+    document.getElementById('rBig').textContent='🔮 순위 예측';
+    hintCard.style.display='none'; gen.style.display='none';
+    submitBox.style.display='none';
+    buildPredBlock();
+  } else if(a.game==='c3'){
+    predBlock.style.display='none'; submitBox.style.display='flex';
     const d=ROUNDS[a.idx]||ROUNDS[0], slot=SLOTS[mySlot];
     gSlot.style.display=''; gSlot.textContent=`${slot.ic} ${slot.nm}`;
     document.getElementById('rLbl').innerHTML = d.practice?'<span class="pchip">연습</span>':'ROUND';
@@ -293,6 +315,7 @@ function enterStage(){
     hintCard.style.display=''; gen.style.display='none';
     renderHint(d, slot);
   } else {
+    predBlock.style.display='none'; submitBox.style.display='flex';
     const gi=GAMEINFO[a.game]||{ic:'❓',t:'답을 제출하세요',s:''};
     gSlot.style.display='none';
     document.getElementById('rLbl').textContent='지금 문제';
@@ -330,6 +353,36 @@ function submitAnswer(){
 }
 document.getElementById('ansBtn').onclick=submitAnswer;
 document.getElementById('ansInput').addEventListener('keydown',e=>{ if(e.key==='Enter')submitAnswer(); });
+
+/* ===== ⑤ 순위 예측 ===== */
+const C5PRED=[{k:'c1',label:'①장소'},{k:'c2',label:'②인물'},{k:'c3',label:'③요리'},{k:'c4',label:'④소개'}];
+function buildPredBlock(){
+  const pb=document.getElementById('predBlock');
+  let html='<div class="pred-head">각 게임에서 <b>우승할 가족</b>을 예측해 주세요 🔮<br>(끝나고 맞힌 개수만큼 보너스 점수!)</div>';
+  C5PRED.forEach(g=>{
+    html+=`<div class="pred-row"><span class="pred-g">${g.label}</span><select data-gk="${g.k}"><option value="">— 우승 가족 —</option>`;
+    teams.forEach((t,i)=>{ html+=`<option value="${i}">${escapeHtml(t)}</option>`; });
+    html+='</select></div>';
+  });
+  html+='<button class="pred-submit" id="predSubmit">🔮 예측 제출</button>';
+  pb.innerHTML=html; pb.style.display='flex';
+  document.getElementById('predSubmit').onclick=submitPrediction;
+}
+function fillPredFromVal(pred){ if(!pred)return;
+  document.querySelectorAll('#predBlock select').forEach(s=>{ const k=s.dataset.gk; if(pred[k]!=null) s.value=pred[k]; }); }
+function submitPrediction(){
+  const a=active; if(!a || !a.open || a.game!=='c5') return;
+  const ss=document.getElementById('subState'); ss.classList.remove('err');
+  const pred={}; document.querySelectorAll('#predBlock select').forEach(s=>{ if(s.value!=='') pred[s.dataset.gk]=+s.value; });
+  if(!Object.keys(pred).length){ ss.classList.add('err'); ss.textContent='최소 한 게임은 예측해 주세요';
+    clearTimeout(ss._t); ss._t=setTimeout(()=>{ss.classList.remove('err');ss.textContent='';},1600); return; }
+  const icon={c1:'①',c2:'②',c3:'③',c4:'④'};
+  const summary=C5PRED.filter(g=>pred[g.k]!=null).map(g=>`${icon[g.k]}${teams[pred[g.k]]||''}`).join(' ');
+  ss.textContent='제출 중…';
+  db.ref('answers/c5/0/'+myTeam).set({ pred, answer:summary, name:teams[myTeam], ts:firebase.database.ServerValue.TIMESTAMP })
+    .then(()=>ptoast('예측을 제출했어요! 🔮'))
+    .catch(()=>{ ss.classList.add('err'); ss.textContent='제출 실패 — 인터넷 확인 후 다시'; });
+}
 </script>
 </body>
 </html>

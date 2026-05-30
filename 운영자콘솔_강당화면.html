@@ -475,7 +475,9 @@
     <div class="kicker">CORNER 05 · 보너스</div>
     <h2 class="title">순위 예측 보너스 🔮</h2>
     <p class="sub">게임 시작 전, 각 가족이 ①~④ 게임의 <b>우승 가족</b>을 예측해요. 행사 끝에 적중한 개수만큼 보너스 점수를 받습니다!</p>
-    <div class="howto">진행 — (게임 전) 각 가족이 부르는 예측을 표에 입력 → (모든 게임 후) <b>결과 채점</b>을 누르면 실제 우승 가족과 비교해 보너스가 ⑤칸에 자동 기록돼요. 다시 눌러도 안전(덮어쓰기).</div>
+    <div class="howto">진행 — (게임 전) 각 가족이 폰으로 ①~④ 우승 예측을 제출(또는 표에 직접 입력) → (모든 게임 후) <b>결과 채점</b>을 누르면 실제 우승 가족과 비교해 보너스가 ⑤칸에 자동 기록돼요. 다시 눌러도 안전(덮어쓰기).</div>
+
+    <div class="ansboard" id="board_c5" style="margin-top:14px"></div>
 
     <div class="card" style="margin-top:16px">
       <div class="row" style="justify-content:space-between;align-items:center">
@@ -582,7 +584,7 @@ function go(id){
   if(typeof BOARD!=='undefined' && BOARD.open && id!==BOARD.game) boardClose();   // 게임 화면 떠나면 폰 입력칸 닫기
   document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
   document.querySelectorAll('.nav button[data-go]').forEach(b=>b.classList.toggle('active',b.dataset.go===id));
-  if(id==='score')renderScore(); if(id==='agg')renderAgg(); if(id==='home')renderTeamChips(); if(id==='c3')showDish(); if(id==='c5')renderC5Pred(); if(id==='c1'||id==='c2'||id==='c4')renderBoardInto(id); activeScreen=id; }
+  if(id==='score')renderScore(); if(id==='agg')renderAgg(); if(id==='home')renderTeamChips(); if(id==='c3')showDish(); if(id==='c5'){renderC5Pred(); renderC5Board();} if(id==='c1'||id==='c2'||id==='c4')renderBoardInto(id); activeScreen=id; }
 document.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
 
 /* =================== 조 / 점수 =================== */
@@ -1024,6 +1026,38 @@ function renderC5Result(winners, correct, pts){
 }
 document.getElementById('c5score').onclick=c5ScoreAndAward;
 
+/* --- ⑤예측: 폰으로 예측 받기 (answers/c5/0 → state.predictions 자동 채움) --- */
+const C5SUB={ ref:null, answers:{} };
+function c5BoardStart(){
+  if(typeof BOARD!=='undefined' && BOARD.open && BOARD.game!=='c5') boardClose();   // 다른 게임 보드 닫기
+  BOARD.game='c5'; BOARD.idx=0; BOARD.open=true; BOARD.revealed=false;
+  setActiveFB(); c5Listen(); renderC5Board(); }
+function c5BoardClose(){ BOARD.open=false; setActiveFB(); renderC5Board(); }
+function c5Listen(){
+  if(!fbOK) return;
+  if(C5SUB.ref){ C5SUB.ref.off(); C5SUB.ref=null; }
+  C5SUB.ref=db.ref('answers/c5/0');
+  C5SUB.ref.on('value', s=>{ C5SUB.answers=s.val()||{};
+    Object.keys(C5SUB.answers).forEach(k=>{ const t=+k, v=C5SUB.answers[k];
+      if(v && v.pred && Number.isInteger(t) && t>=0 && t<state.teams.length){
+        if(!state.predictions[t]) state.predictions[t]={};
+        C5GAMES.forEach(g=>{ const pv=v.pred[g.k]; if(pv!=null && pv!=='') state.predictions[t][g.k]=+pv; });
+      } });
+    save();
+    if(activeScreen==='c5'){ renderC5Pred(); renderC5Board(); }
+  }); }
+function renderC5Board(){
+  const host=document.getElementById('board_c5'); if(!host) return;
+  if(!fbOK){ host.innerHTML='<div class="ab-hint">⚙️ Firebase 설정을 넣으면 가족 폰으로 예측을 받을 수 있어요.</div>'; return; }
+  const on=(BOARD.game==='c5' && BOARD.open);
+  const cnt=Object.keys(C5SUB.answers||{}).filter(k=>C5SUB.answers[k]&&C5SUB.answers[k].pred).length;
+  host.innerHTML=`<div class="ab-bar"><span class="ab-title">📲 폰으로 예측 받기</span>`
+    +(on?`<span class="ab-count">${cnt} / ${state.teams.length} 제출</span>`:``)
+    +`<button class="btn ${on?'ghost':'amber'} sm" id="c5board_toggle">${on?'⏸ 예측 받기 닫기':'▶ 폰으로 예측 받기 시작'}</button></div>`
+    +`<div class="ab-hint">${on?'가족 폰에 ①~④ 우승 예측칸이 떴어요. 제출이 아래 표에 자동으로 채워져요.':'시작을 누르면 가족 폰에 예측 입력칸이 열려요. (아래 표에 직접 입력도 가능)'}</div>`;
+  const tg=document.getElementById('c5board_toggle'); if(tg) tg.onclick=()=>{ if(on){c5BoardClose();}else{c5BoardStart();} };
+}
+
 /* =================== 실시간 답안 보드 (모든 게임 공용) =================== */
 const BOARD={ game:null, idx:0, open:false, ref:null, answers:{}, revealed:false, marks:{}, given:{}, pts:50 };
 const BOARD_DEF_PTS={ c1:100, c2:100, c3:50, c4:100 };
@@ -1143,6 +1177,7 @@ window.addEventListener('beforeunload', e=>{ e.preventDefault(); e.returnValue='
     if(activeScreen==='score')renderScore(); if(activeScreen==='agg')renderAgg();
     if(BOARD.game)renderBoardInto(BOARD.game);
   });
+  c5Listen();   // ⑤예측 폰 제출을 항상 수신 → 표 자동 채움(운영자가 '시작'을 눌러야 폰에 칸이 뜸)
   // 점수 복구 — 새 노트북/시크릿창(로컬 점수 전부 0)이면 Firebase 백업 점수를 불러옴
   db.ref('state').once('value', s=>{ const r=s.val(); if(!r||!r.scores)return;
     const localEmpty = CORNERS.every(c=>(state.scores[c.k]||[]).every(v=>!v));
