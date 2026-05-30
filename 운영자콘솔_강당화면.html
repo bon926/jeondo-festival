@@ -396,10 +396,11 @@
       <div id="c3body"><div class="prompt-big">이 요리는?</div><div id="c3answer" style="margin-top:14px"></div></div>
     </div>
     <div class="row" style="margin-top:12px;justify-content:center">
-      <button class="btn" id="c3reveal">정답 공개(화면)</button>
+      <button class="btn" id="c3reveal">정답 공개 + 수동 지급</button>
       <button class="btn ghost" id="c3clearsub">이번 라운드 제출 비우기</button>
       <button class="btn ghost" id="c3resetall" style="color:#c0392b">③요리 전체 초기화</button>
     </div>
+    <div class="award card" id="c3award" style="display:none"></div>
 
     <div class="ansboard" id="board_c3"></div>
   </section>
@@ -837,11 +838,13 @@ function isCorrect(submitted, round){ const b=normalize(submitted); if(!b)return
 function showDish(){ const r=ROUNDS[c3i];
   document.getElementById('c3tag').innerHTML = r.practice?'<span class="pchip">연습</span> 라면':`ROUND ${realRNum(c3i)} / ${realRTotal()}`;
   document.getElementById('c3body').innerHTML=`<div class="prompt-big">이 요리는?</div><div id="c3answer" style="margin-top:14px"></div>`;
+  document.getElementById('c3award').style.display='none';
   boardSync('c3');
 }
 function setRound(n){ c3i=n; showDish(); }
 document.getElementById('c3reveal').onclick=()=>{ const r=ROUNDS[c3i];
-  document.getElementById('c3answer').innerHTML=`<div class="answer-big">${r.a}</div>`; };
+  document.getElementById('c3answer').innerHTML=`<div class="answer-big">${r.a}</div>`;
+  buildAward(document.getElementById('c3award'), [50,40,30], r.practice, 'c3'); };   /* 폰 없이도 맞힌 가족 수동 지급 (보드와 같은 원장 → 이중지급 없음) */
 document.getElementById('c3prev').onclick=()=>{ if(c3i>0) setRound(c3i-1); };
 document.getElementById('c3next').onclick=()=>{ if(c3i<ROUNDS.length-1) setRound(c3i+1); else toast('마지막 라운드예요'); };
 document.getElementById('c3clearsub').onclick=()=>{ if(!fbOK){toast('Firebase 설정이 필요해요');return;}
@@ -935,7 +938,9 @@ document.getElementById('finaleClose').onclick=()=>{ document.getElementById('fi
 
 /* =================== 수동 점수 조정(모든 화면에서 버튼으로) =================== */
 let manualState={team:0, corner:'adj'};
-function openManual(){ if(manualState.team>=state.teams.length) manualState.team=0; renderManual(); document.getElementById('manualPanel').classList.add('on'); }
+function openManual(){ if(manualState.team>=state.teams.length) manualState.team=0;
+  if(['c1','c2','c3','c4','c5'].includes(activeScreen)) manualState.corner=activeScreen;   // 현재 게임 칸 기본 선택
+  renderManual(); document.getElementById('manualPanel').classList.add('on'); }
 function closeManual(){ document.getElementById('manualPanel').classList.remove('on'); }
 function renderManual(){
   const tw=document.getElementById('mTeams'); tw.innerHTML='';
