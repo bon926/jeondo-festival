@@ -254,7 +254,7 @@ function renderTeams(){
     b.innerHTML=`<span style="flex:1">${escapeHtml(t)}</span><button class="tedit" data-i="${i}" title="이름 바꾸기">✏️</button>`;
     b.onclick=()=>{ myTeam=i; mySlot=null; document.getElementById('gTeam').textContent=t; document.getElementById('wTeam').textContent=t; route(); };
     b.querySelector('.tedit').onclick=(e)=>{ e.stopPropagation(); const nn=prompt('우리 가족 이름을 바꿔요', teams[i]);
-      if(nn!=null && nn.trim()){ const arr=teams.slice(); arr[i]=nn.trim().slice(0,12); db.ref('teams').set(arr); } };
+      if(nn!=null && nn.trim()){ db.ref('teams/'+i).set(nn.trim().slice(0,12)); } };   // 항목 단위 갱신(다른 가족 안 건드림)
     g.appendChild(b); });
 }
 function renderSlots(){
@@ -270,7 +270,7 @@ document.getElementById('changeBtn2').onclick=leaveToTeams;
 function route(){
   if(myTeam==null) return;                              // 조 선택 전
   const a=active;
-  if(!a || !a.open || !a.game){ if(ansRef){ansRef.off();ansRef=null;} curKey=null; show('waiting'); return; }
+  if(!a || !a.open || !a.game){ if(ansRef){ansRef.off();ansRef=null;} show('waiting'); return; }   // curKey 유지 → 같은 문제 재열기 시 입력 보존
   if(a.game==='c3' && mySlot==null){ renderSlots(); show('pickSlot'); return; }
   enterStage();
 }
@@ -278,7 +278,8 @@ function enterStage(){
   const a=active; show('game');
   document.getElementById('gTeam').textContent=teams[myTeam]||'○가족';
   const key=a.game+'_'+a.idx, changed=(curKey!==null && curKey!==key);
-  document.getElementById('ansInput').value=''; document.getElementById('subState').textContent='';
+  if(changed) document.getElementById('ansInput').value='';   // 새 문제일 때만 입력칸 비움(같은 문제 재열기 시 보존)
+  document.getElementById('subState').textContent='';
   if(ansRef){ ansRef.off(); }
   ansRef = db.ref('answers/'+a.game+'/'+a.idx+'/'+myTeam);
   ansRef.on('value', s=>{ const v=s.val(); const ss=document.getElementById('subState'); ss.classList.remove('err');
