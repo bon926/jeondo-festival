@@ -655,14 +655,14 @@ document.getElementById('c2next').onclick=()=>{ if(c2i<PEOPLE.length-1){c2i++;sh
 /* alt: 정답으로 함께 인정할 별칭(이명·영문·흔한 표기). 라운드 순서는 폰 파일과 반드시 동일! */
 const ROUNDS=[
   {practice:true, a:"라면", alt:["라멘","신라면","진라면"]},
-  {a:"김치찌개", alt:[]},
-  {a:"마라탕", alt:["마라샹궈","malatang"]},
-  {a:"떡볶이", alt:["떡복이"]},
-  {a:"초밥(스시)", alt:["스시","초밥","sushi"]},
-  {a:"부대찌개", alt:["부대찌게"]},
-  {a:"까르보나라", alt:["까르보","carbonara","크림파스타","까르보나라스파게티"]},
-  {a:"삼겹살", alt:["삼겹","오겹살"]},
-  {a:"팥빙수", alt:["빙수"]},
+  {a:"동파육", alt:["동파러우","동파","dongpo"]},
+  {a:"팟타이", alt:["패드타이","팻타이","padthai","pad thai"]},
+  {a:"파에야", alt:["빠에야","파에지아","paella"]},
+  {a:"분짜", alt:["분차","buncha","bun cha"]},
+  {a:"굴라쉬", alt:["굴라시","구야시","goulash","굴라쉬스튜"]},
+  {a:"세비체", alt:["세비치","쎄비체","ceviche"]},
+  {a:"카이막", alt:["카이마크","kaymak"]},
+  {a:"하기스", alt:["해기스","haggis"]},
 ];
 let c3i=0; const C3PTS=[50,40,30]; let c3subRef=null;
 function realRNum(i){ let n=0; for(let k=0;k<=i;k++) if(!ROUNDS[k].practice)n++; return n; }
