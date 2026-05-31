@@ -352,7 +352,7 @@
       </div>
       <div class="row" style="margin-top:14px;justify-content:center">
         <button class="btn amber" id="c1zoomout">🔍 줌아웃 <span style="opacity:.7">(Space)</span></button>
-        <button class="btn" id="c1reveal">정답 공개</button>
+        <button class="btn" id="c1reveal">📷 전체 사진 보기</button>
       </div>
       <div class="award card" id="c1award" style="display:none"></div>
       <div class="ansboard" id="board_c1"></div>
@@ -775,7 +775,7 @@ document.getElementById('c1zoomout').onclick=()=>{ if(c1zoom<ZOOMS.length-1){c1z
   if(img)img.style.transform=`scale(${ZOOMS[c1zoom]})`; toast(`줌아웃 ${c1zoom+1}/${ZOOMS.length} · 지금 맞히면 ${C1PTS[c1zoom]}점`);} else toast('이미 전체가 보여요'); };
 document.getElementById('c1reveal').onclick=()=>{ const l=locs[c1i]; const img=document.getElementById('c1img');
   if(img){c1zoom=ZOOMS.length-1; img.style.transform='scale(1)';}
-  document.getElementById('c1answer').innerHTML=`<div class="answer-big">${l.name||'(이름 미입력)'}</div>`;
+  document.getElementById('c1answer').innerHTML='';   /* 정답 이름 표시 안 함 — 운영자가 마이크로 직접 발표 */
   buildAward(document.getElementById('c1award'), C1PTS, l.practice, 'c1'); };
 document.getElementById('c1prev').onclick=()=>{ if(c1i>0){c1i--;showLoc();} };
 document.getElementById('c1next').onclick=()=>{ if(c1i<locs.length-1){c1i++;showLoc();} else toast('마지막 장소예요'); };
@@ -1094,8 +1094,9 @@ function boardIsPractice(){
 function answerMatch(sub,ans){ const a=normalize(ans), b=normalize(sub); if(!a||!b)return false;
   return a===b || (a.length>=2 && b.includes(a)); }   /* 제출이 정답을 통째 포함만 인정. 부분답(정답이 제출 포함)은 오탐이라 제외 */
 function boardAuto(sub){
+  if(BOARD.game==='c1') return false;   /* ①장소는 운영자가 마이크로 발표 후 직접 판정 — 자동 채점 안 함 */
   if(BOARD.game==='c3') return ROUNDS[BOARD.idx]?isCorrect(sub,ROUNDS[BOARD.idx]):false;
-  const ans=boardKnownAnswer(); return ans?answerMatch(sub,ans):false; }   /* ①장소도 장소명과 자동 매칭(운영자가 카드로 ✓/✗ 정정 가능) */
+  const ans=boardKnownAnswer(); return ans?answerMatch(sub,ans):false; }
 function setActiveFB(){ if(fbOK){ try{ db.ref('active').set({game:BOARD.game, idx:BOARD.idx, open:BOARD.open}); db.ref('active/open').onDisconnect().set(false); }catch(e){} } }
 function boardStart(game, idx){
   BOARD.game=game; BOARD.idx=idx; BOARD.open=true; BOARD.revealed=false; BOARD.marks={}; BOARD.pts=BOARD_DEF_PTS[game]||50;
@@ -1135,7 +1136,7 @@ function renderBoardInto(game){
   bar+=`</div>`;
   if(!BOARD.revealed){ bar+=`<div style="text-align:center;margin-bottom:10px"><span class="ab-ref">🙈 컨닝 방지 — 지금은 <b>제출 완료</b>만 보여요. <b>답안 공개</b>를 누르면 모든 답이 한 번에 떠요.</span></div>`; }
   else { bar+= game==='c1'
-    ? `<div style="text-align:center;margin-bottom:10px"><span class="ab-ref">카드를 눌러 ✓/✗ 직접 판정${ans?` · 참고 이름: ${escapeHtml(ans)}`:''}</span></div>`
+    ? `<div style="text-align:center;margin-bottom:10px"><span class="ab-ref">마이크로 정답 발표 후, 각 가족 답을 보고 카드를 눌러 ✓/✗ 판정</span></div>`
     : (ans?`<div style="text-align:center;margin-bottom:10px"><span class="ab-ref">정답: ${escapeHtml(ans)} · 카드를 눌러 ✓/✗ 고칠 수 있어요</span></div>`:''); }
   let cards='<div class="ab-cards">';
   state.teams.forEach((t,i)=>{ const v=BOARD.answers[i]; const sub=v&&v.answer; let cls='',badge='',body;
