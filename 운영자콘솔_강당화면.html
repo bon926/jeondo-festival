@@ -118,6 +118,14 @@
     border:2px solid var(--line);display:flex;align-items:center;justify-content:center;}
   .zoom-frame img{width:100%;height:100%;object-fit:cover;transition:transform .6s cubic-bezier(.2,.7,.2,1);transform-origin:center;}
   .zoom-empty{color:#a08a6a;font-weight:800;font-size:18px;text-align:center;padding:20px;line-height:1.6;}
+  /* 보너스 새가족 퀴즈 */
+  .qtext{font-size:clamp(22px,3.6vw,40px);font-weight:900;line-height:1.4;margin-top:14px;}
+  .quiz-opt{display:flex;align-items:center;gap:14px;background:var(--card);border:2px solid var(--line);border-radius:16px;padding:15px 20px;margin-top:12px;font-size:clamp(18px,2.4vw,26px);font-weight:800;transition:all .2s;}
+  .quiz-opt .ol{flex-shrink:0;width:40px;height:40px;border-radius:50%;background:var(--paper);display:flex;align-items:center;justify-content:center;font-weight:900;color:var(--tomato);}
+  .quiz-opt.correct{background:#e7f5e0;border-color:var(--leaf);box-shadow:0 6px 18px rgba(76,122,52,.2);}
+  .quiz-opt.correct .ol{background:var(--leaf);color:#fff;}
+  .quiz-exp{margin-top:18px;background:#fff4dc;border:1.5px solid #f0d79a;border-radius:14px;padding:16px 22px;font-size:clamp(15px,2vw,21px);font-weight:800;color:#8a5a12;line-height:1.65;text-align:center;}
+  .qlevel{display:inline-block;padding:5px 14px;border-radius:20px;font-size:14px;font-weight:900;color:#fff;}
 
   .codebox{background:var(--ink);color:var(--paper);border-radius:20px;padding:28px 40px;display:inline-block;}
   .codebox .lbl{font-size:15px;letter-spacing:3px;color:var(--tangerine);font-weight:800;}
@@ -257,6 +265,7 @@
   <button data-go="c3">③ 요리</button>
   <button data-go="c4">④ 소개</button>
   <button data-go="c5">⑤ 예측</button>
+  <button data-go="quiz">🎁 새가족 퀴즈</button>
   <span class="spacer"></span>
   <button data-go="score" class="scorebtn">🏆 점수판</button>
   <button data-go="agg" class="scorebtn">📊 집계</button>
@@ -497,6 +506,27 @@
     <div id="c5result" style="margin-top:16px"></div>
   </section>
 
+  <!-- ============ BONUS : 새가족 퀴즈 ============ -->
+  <section class="screen" id="quiz">
+    <div class="kicker">BONUS · 새가족 환영 🎁</div>
+    <h2 class="title">새가족 교회 상식 퀴즈</h2>
+    <p class="sub">강당에서 <b>새가족만 일어나</b> 1:1로 도전! 진행자가 문제를 읽어주고 <span class="kbd">Space</span> 또는 버튼으로 정답을 공개하세요. (점수 없이 환영·재미용)</p>
+    <div class="display" style="min-height:auto;align-items:stretch">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <span class="qlevel" id="qLevel">쉬움</span>
+        <span class="counter" id="qCounter">1 / 12</span>
+      </div>
+      <div class="qtext" id="qText">문제</div>
+      <div id="qOpts"></div>
+      <div class="quiz-exp" id="qExp" style="display:none"></div>
+    </div>
+    <div class="row" style="margin-top:14px;justify-content:center">
+      <button class="btn ghost sm" id="qPrev">‹ 이전</button>
+      <button class="btn" id="qReveal">정답 공개 <span style="opacity:.7">(Space)</span></button>
+      <button class="btn ghost sm" id="qNext">다음 ›</button>
+    </div>
+  </section>
+
 </main>
 
 <div class="finale" id="finale">
@@ -584,7 +614,7 @@ function go(id){
   if(typeof BOARD!=='undefined' && BOARD.open && id!==BOARD.game) boardClose();   // 게임 화면 떠나면 폰 입력칸 닫기
   document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
   document.querySelectorAll('.nav button[data-go]').forEach(b=>b.classList.toggle('active',b.dataset.go===id));
-  if(id==='score')renderScore(); if(id==='agg')renderAgg(); if(id==='home')renderTeamChips(); if(id==='c3')showDish(); if(id==='c5'){renderC5Pred(); renderC5Board();} if(id==='c1'||id==='c2'||id==='c4')renderBoardInto(id); activeScreen=id; }
+  if(id==='score')renderScore(); if(id==='agg')renderAgg(); if(id==='home')renderTeamChips(); if(id==='c3')showDish(); if(id==='c5'){renderC5Pred(); renderC5Board();} if(id==='quiz')renderQuiz(); if(id==='c1'||id==='c2'||id==='c4')renderBoardInto(id); activeScreen=id; }
 document.querySelectorAll('[data-go]').forEach(el=>el.addEventListener('click',()=>go(el.dataset.go)));
 
 /* =================== 조 / 점수 =================== */
@@ -1081,6 +1111,39 @@ function renderC5Board(){
   const tg=document.getElementById('c5board_toggle'); if(tg) tg.onclick=()=>{ if(on){c5BoardClose();}else{c5BoardStart();} };
 }
 
+/* =================== BONUS: 새가족 교회 상식 퀴즈 =================== */
+const QUIZ=[
+  {lv:'쉬움', q:'성경은 모두 몇 권으로 이루어져 있을까요?', opts:['12권','40권','66권','100권'], ans:2, exp:'구약 39권 + 신약 27권 = 66권!'},
+  {lv:'쉬움', q:'예수님이 태어나신 날을 기념하는 날은?', opts:['추수감사절','성탄절(크리스마스)','부활절','맥추절'], ans:1, exp:'12월 25일, 케이크 먹는 그날 맞아요 🎂'},
+  {lv:'쉬움', q:'교회에서 나눠주는, 예배 순서와 광고가 적힌 종이의 이름은?', opts:['전단지','회보','주보','메뉴판'], ans:2, exp:'매주 새로 나와서 ‘주보’! 오늘의 광고가 다 들어 있어요'},
+  {lv:'쉬움', q:'기도 끝에 다 같이 외치는 “아멘”의 뜻은?', opts:['끝!','안녕','진실로 / 그렇게 되기를','배고파요'], ans:2, exp:'“정말 그렇게 되길 바라요!”라는 진심의 한마디 🙏'},
+  {lv:'중간', q:'예수님이 행하신 첫 번째 기적은?', opts:['죽은 자를 살림','물을 포도주로 바꿈','바다 위를 걸음','오병이어'], ans:1, exp:'가나의 결혼식에서! 첫 기적이 잔치 분위기 살리기였어요 🍷'},
+  {lv:'중간', q:'노아의 방주에 들어가 살아남은 사람은 모두 몇 명?', opts:['2명','4명','8명','12명'], ans:2, exp:'노아 부부 + 세 아들 부부 = 8명! (동물은 셀 수 없이 많고요 🐘)'},
+  {lv:'중간', q:'다윗이 거인 골리앗을 쓰러뜨린 무기는?', opts:['칼','창','활','물맷돌(돌팔매)'], ans:3, exp:'갑옷도 마다하고 돌멩이 하나로! 작은 게 큰 걸 이긴 명장면 💥'},
+  {lv:'중간', q:'“샬롬”은 어느 나라 말이고 무슨 뜻일까요?', opts:['영어 · 사랑','히브리어 · 평화','헬라어 · 기쁨','라틴어 · 축복'], ans:1, exp:'만날 때도 헤어질 때도 “샬롬!” 평화를 빌어주는 인사 ✌️'},
+  {lv:'어려움', q:'성경에서 가장 짧은 절(節)의 내용은?', opts:['“기도하라”','“감사하라”','“예수께서 눈물을 흘리시더라”','“사랑하라”'], ans:2, exp:'요한복음 11:35, 딱 한 문장! 예수님도 우셨다는 짧고 깊은 구절 😢'},
+  {lv:'어려움', q:'역사상 전 세계에서 가장 많이 보급된 책은?', opts:['해리포터','사전','성경','수학의 정석'], ans:2, exp:'수십억 권! 베스트셀러 순위에 늘 1등인 책 📖'},
+  {lv:'어려움', q:'예수님의 부활을 기념하는 부활절의 대표 상징물은?', opts:['호박','달걀(계란)','솔방울','양말'], ans:1, exp:'껍질을 깨고 나오는 생명! 그래서 부활의 상징이에요 🥚'},
+  {lv:'어려움', q:'십일조는 수입의 얼마를 드리는 것일까요?', opts:['1/2','1/5','1/10','전부'], ans:2, exp:'열의 하나, 그래서 ‘십일조’! 이름에 답이 숨어 있어요'},
+];
+let qi=0, qRevealed=false;
+function qLevelStyle(lv){ return lv==='쉬움'?'background:var(--leaf)':lv==='중간'?'background:var(--tangerine);color:#3a2604':'background:#c0392b'; }
+function renderQuiz(){
+  const x=QUIZ[qi]; const oc=['A','B','C','D'];
+  const lvEl=document.getElementById('qLevel'); lvEl.textContent=x.lv; lvEl.setAttribute('style', 'display:inline-block;padding:5px 14px;border-radius:20px;font-size:14px;font-weight:900;color:#fff;'+qLevelStyle(x.lv));
+  document.getElementById('qCounter').textContent=(qi+1)+' / '+QUIZ.length;
+  document.getElementById('qText').textContent='Q'+(qi+1)+'. '+x.q;
+  document.getElementById('qOpts').innerHTML = x.opts.map((o,i)=>
+    `<div class="quiz-opt${qRevealed&&i===x.ans?' correct':''}"><span class="ol">${oc[i]}</span><span>${escapeHtml(o)}</span></div>`).join('');
+  const exp=document.getElementById('qExp');
+  if(qRevealed){ exp.style.display='block'; exp.innerHTML='✅ 정답: '+oc[x.ans]+'. '+escapeHtml(x.opts[x.ans])+'<br>'+escapeHtml(x.exp); }
+  else exp.style.display='none';
+  document.getElementById('qReveal').innerHTML = qRevealed?'정답 숨기기' : '정답 공개 <span style="opacity:.7">(Space)</span>';
+}
+document.getElementById('qReveal').onclick=()=>{ qRevealed=!qRevealed; renderQuiz(); };
+document.getElementById('qPrev').onclick=()=>{ if(qi>0){qi--;qRevealed=false;renderQuiz();} };
+document.getElementById('qNext').onclick=()=>{ if(qi<QUIZ.length-1){qi++;qRevealed=false;renderQuiz();} else toast('마지막 문제예요'); };
+
 /* =================== 실시간 답안 보드 (모든 게임 공용) =================== */
 const BOARD={ game:null, idx:0, open:false, ref:null, answers:{}, revealed:false, marks:{}, given:{}, pts:50 };
 const BOARD_DEF_PTS={ c1:100, c2:100, c3:50, c4:100 };
@@ -1171,6 +1234,7 @@ document.addEventListener('keydown',e=>{ if(e.target.tagName==='INPUT'||e.target
   if(activeScreen==='c1'){ document.getElementById('c1zoomout').click(); handled=true; }
   else if(activeScreen==='c2'){ document.getElementById('c2more').click(); handled=true; }
   else if(activeScreen==='c4' && document.getElementById('c4-show').style.display==='block'){ document.getElementById('c4more').click(); handled=true; }
+  else if(activeScreen==='quiz'){ if(!qRevealed){ qRevealed=true; renderQuiz(); } else { qRevealed=false; if(qi<QUIZ.length-1){qi++;} renderQuiz(); } handled=true; }
   if(handled) e.preventDefault(); /* 그 외 화면(점수판·집계 등)에선 Space 스크롤 유지 */ });
 
 /* =================== INIT =================== */
