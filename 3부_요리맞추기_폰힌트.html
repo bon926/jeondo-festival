@@ -101,6 +101,11 @@
   .pred-row select:focus{outline:none;border-color:var(--tangerine);}
   .pred-submit{margin-top:6px;background:var(--tomato);color:#fff;border:none;border-radius:16px;padding:16px;font-size:18px;font-weight:900;cursor:pointer;box-shadow:0 5px 0 #b8401f;}
   .pred-submit:active{transform:translateY(3px);box-shadow:0 2px 0 #b8401f;}
+  /* ①장소 사진(강당 화면과 동기화 — 줌은 운영자가 제어) */
+  .c1photo{width:100%;aspect-ratio:4/3;border-radius:16px;overflow:hidden;background:#efe2c8;border:2px solid var(--line);display:flex;align-items:center;justify-content:center;margin-bottom:8px;box-shadow:0 8px 20px var(--shadow);}
+  .c1photo img{width:100%;height:100%;object-fit:cover;transition:transform .6s cubic-bezier(.2,.7,.2,1);transform-origin:center;}
+  .c1photo .c1wait{color:#a08a6a;font-weight:800;font-size:14px;text-align:center;padding:20px;line-height:1.6;}
+  .c1cap{text-align:center;font-size:13px;color:#8a7150;font-weight:800;margin-bottom:8px;}
 </style>
 </head>
 <body>
@@ -172,6 +177,10 @@
       <div class="hint-area" id="hintArea"></div>
     </div>
     <div class="genprompt" id="genPrompt" style="display:none"></div>
+    <div id="c1photoWrap" style="display:none">
+      <div class="c1cap">📍 이 장소는 어디일까요? (강당 화면과 같은 사진)</div>
+      <div class="c1photo" id="c1photo"><div class="c1wait">강당 화면을 봐주세요…</div></div>
+    </div>
     <div class="predblock" id="predBlock" style="display:none"></div>
 
     <div class="submit">
@@ -238,7 +247,7 @@ const GAMEINFO={ c1:{ic:'📍',t:'이 장소는 어디일까요?',s:'강당 화�
   c4:{ic:'🎤',t:'이 사람은 누구일까요?',s:'강당 화면의 소개 힌트를 보고 답을 적어주세요'} };
 function gameLabelKo(g){ return ({c1:'①장소 맞히기',c2:'②인물 맞히기',c3:'③요리',c4:'④소개 맞히기'})[g]||g; }
 
-let teams=[], myTeam=null, mySlot=null, active=null, ansRef=null, curKey=null;
+let teams=[], myTeam=null, mySlot=null, active=null, ansRef=null, curKey=null, c1view=null;
 
 function show(id){ document.querySelectorAll('.scr').forEach(s=>s.classList.toggle('on',s.id===id)); }
 function ptoast(m){ const t=document.getElementById('ptoast'); if(!t)return; t.textContent=m; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),1800); }
@@ -254,6 +263,17 @@ else{
   db.ref('teams').on('value', s=>{ teams=s.val()||[]; renderTeams();
     if(myTeam!=null && teams[myTeam]){ document.getElementById('gTeam').textContent=teams[myTeam]; document.getElementById('wTeam').textContent=teams[myTeam]; } });
   db.ref('active').on('value', s=>{ active=s.val()||null; route(); });
+  db.ref('c1view').on('value', s=>{ c1view=s.val()||null;
+    if(active && active.game==='c1' && active.open) renderC1Photo(); });
+}
+function renderC1Photo(){
+  const host=document.getElementById('c1photo'); if(!host) return;
+  if(!c1view || !c1view.img){ host.innerHTML='<div class="c1wait">강당 화면을 봐주세요…</div>'; return; }
+  const zoom=c1view.zoom||1;
+  let img=host.querySelector('img');
+  if(!img){ host.innerHTML='<img>'; img=host.querySelector('img'); }
+  if(img.getAttribute('src')!==c1view.img) img.setAttribute('src', c1view.img);
+  img.style.transform='scale('+zoom+')';
 }
 
 function renderTeams(){
@@ -299,23 +319,31 @@ function enterStage(){
     else { ss.textContent=''; } });
   const hintCard=document.getElementById('hintCard'), gen=document.getElementById('genPrompt'), gSlot=document.getElementById('gSlot');
   const predBlock=document.getElementById('predBlock'), submitBox=document.querySelector('.submit');
+  const c1wrap=document.getElementById('c1photoWrap');
   if(a.game==='c5'){
-    gSlot.style.display='none';
+    gSlot.style.display='none'; c1wrap.style.display='none';
     document.getElementById('rLbl').textContent='보너스 게임';
     document.getElementById('rBig').textContent='🔮 순위 예측';
     hintCard.style.display='none'; gen.style.display='none';
     submitBox.style.display='none';
     buildPredBlock();
   } else if(a.game==='c3'){
-    predBlock.style.display='none'; submitBox.style.display='flex';
+    predBlock.style.display='none'; submitBox.style.display='flex'; c1wrap.style.display='none';
     const d=ROUNDS[a.idx]||ROUNDS[0], slot=SLOTS[mySlot];
     gSlot.style.display=''; gSlot.textContent=`${slot.ic} ${slot.nm}`;
     document.getElementById('rLbl').innerHTML = d.practice?'<span class="pchip">연습</span>':'ROUND';
     document.getElementById('rBig').textContent = d.practice?'🍜 연습':`${realNum(a.idx)} / ${realTotal()}`;
     hintCard.style.display=''; gen.style.display='none';
     renderHint(d, slot);
-  } else {
+  } else if(a.game==='c1'){
     predBlock.style.display='none'; submitBox.style.display='flex';
+    gSlot.style.display='none'; hintCard.style.display='none'; gen.style.display='none';
+    document.getElementById('rLbl').textContent='지금 문제';
+    document.getElementById('rBig').textContent=gameLabelKo(a.game);
+    c1wrap.style.display='block';
+    renderC1Photo();
+  } else {
+    predBlock.style.display='none'; submitBox.style.display='flex'; c1wrap.style.display='none';
     const gi=GAMEINFO[a.game]||{ic:'❓',t:'답을 제출하세요',s:''};
     gSlot.style.display='none';
     document.getElementById('rLbl').textContent='지금 문제';

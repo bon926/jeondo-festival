@@ -770,12 +770,17 @@ function showLoc(){
   else frame.innerHTML=`<div class="zoom-empty">📷 "${l.name||'이 장소'}" 사진 미등록<br><span style="font-size:13px">사진 없이도 정답 공개로 진행 가능</span></div>`;
   document.getElementById('c1answer').innerHTML=''; document.getElementById('c1award').style.display='none';
   boardSync('c1');
+  broadcastC1View();
 }
+/* 강당 사진+줌 단계를 가족 폰으로 방송 (폰은 운영자 줌을 그대로 따라감) */
+function broadcastC1View(){ if(!fbOK) return; const l=locs[c1i];
+  try{ db.ref('c1view').set({ img: (l&&l.img)||null, zoom: ZOOMS[c1zoom]||1, idx: c1i }); }catch(e){} }
 document.getElementById('c1zoomout').onclick=()=>{ if(c1zoom<ZOOMS.length-1){c1zoom++; const img=document.getElementById('c1img');
-  if(img)img.style.transform=`scale(${ZOOMS[c1zoom]})`; toast(`줌아웃 ${c1zoom+1}/${ZOOMS.length} · 지금 맞히면 ${C1PTS[c1zoom]}점`);} else toast('이미 전체가 보여요'); };
+  if(img)img.style.transform=`scale(${ZOOMS[c1zoom]})`; broadcastC1View(); toast(`줌아웃 ${c1zoom+1}/${ZOOMS.length} · 지금 맞히면 ${C1PTS[c1zoom]}점`);} else toast('이미 전체가 보여요'); };
 document.getElementById('c1reveal').onclick=()=>{ const l=locs[c1i]; const img=document.getElementById('c1img');
   if(img){c1zoom=ZOOMS.length-1; img.style.transform='scale(1)';}
   document.getElementById('c1answer').innerHTML='';   /* 정답 이름 표시 안 함 — 운영자가 마이크로 직접 발표 */
+  broadcastC1View();
   buildAward(document.getElementById('c1award'), C1PTS, l.practice, 'c1'); };
 document.getElementById('c1prev').onclick=()=>{ if(c1i>0){c1i--;showLoc();} };
 document.getElementById('c1next').onclick=()=>{ if(c1i<locs.length-1){c1i++;showLoc();} else toast('마지막 장소예요'); };
