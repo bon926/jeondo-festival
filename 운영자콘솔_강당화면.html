@@ -327,7 +327,7 @@
     <div id="c1-setup">
       <div class="kicker">CORNER 01 · SETUP</div>
       <h2 class="title">교회 장소 등록 📍</h2>
-      <p class="sub">맞출 장소 이름을 쓰고, 노트북에 있는 사진을 올려주세요. 첫 항목은 <b>연습용 예시</b>(사진 자동 내장)예요. (업로드한 사진은 이 세션에서만 유지 — 행사 직전 등록 추천)</p>
+      <p class="sub">실제 교회 사진 <b>20곳이 이미 등록</b>돼 있어요 — 바로 <b>게임 시작</b>하면 됩니다. 첫 항목은 연습용이고, 이름·순서 수정이나 사진 교체도 가능해요.</p>
       <div class="card" style="margin-top:16px">
         <div id="locList"></div>
         <div class="row" style="margin-top:6px">
@@ -699,11 +699,29 @@ const practiceSVG = `<svg xmlns='http://www.w3.org/2000/svg' width='800' height=
 </svg>`;
 function svgURL(s){ return 'data:image/svg+xml;utf8,'+encodeURIComponent(s); }
 
-const LS_LOCS='evfest2026_locs';
+const LS_LOCS='evfest2026_locs2';
 function practiceLoc(){ return {name:'✝️ 본당 십자가 (연습)', img:svgURL(practiceSVG), practice:true}; }
-function defaultLocs(){ return [ practiceLoc(),  /* 아래 이름은 예시예요 — 우리 교회 실제 장소로 바꾸고, 행사 직전 사진을 올리세요 */
-  {name:'카페', img:null},{name:'기도실', img:null},{name:'친교실', img:null},
-  {name:'본당 강대상', img:null},{name:'주차장 표지판', img:null} ]; }
+function defaultLocs(){ return [ practiceLoc(),  /* 실제 교회 사진 20곳 내장(places/NN.jpg) — 이름·순서 수정 가능, 사진 교체도 가능 */
+  {name:'피아노 (찬양석)', img:'places/01.jpg'},
+  {name:'엘리베이터 앞', img:'places/02.jpg'},
+  {name:'교회 외관 (퍼즐 그림)', img:'places/03.jpg'},
+  {name:'카페 (친교실)', img:'places/04.jpg'},
+  {name:'화장실', img:'places/05.jpg'},
+  {name:'음악 연습실', img:'places/06.jpg'},
+  {name:'유치부 복도', img:'places/07.jpg'},
+  {name:'사물함 복도', img:'places/08.jpg'},
+  {name:'야외 산책로 (데크)', img:'places/09.jpg'},
+  {name:'샤워실 (세면실)', img:'places/10.jpg'},
+  {name:'좁은 계단', img:'places/11.jpg'},
+  {name:'탕비실', img:'places/12.jpg'},
+  {name:'회의실 (교사실)', img:'places/13.jpg'},
+  {name:'사무실 (방송실)', img:'places/14.jpg'},
+  {name:'트로피 진열장', img:'places/15.jpg'},
+  {name:'세계지도', img:'places/16.jpg'},
+  {name:'교회 입구 벽 (현수막)', img:'places/17.jpg'},
+  {name:'교육관 (마루 홀)', img:'places/18.jpg'},
+  {name:'계단 (예수님 그림)', img:'places/19.jpg'},
+  {name:'찬양팀 무대', img:'places/20.jpg'} ]; }
 function loadLocs(){ try{ const v=JSON.parse(localStorage.getItem(LS_LOCS));
     if(Array.isArray(v)&&v.length){ // 연습 항목은 SVG를 매번 재생성(용량 절약)
       if(v[0]&&v[0].practice) v[0]=practiceLoc(); else v.unshift(practiceLoc()); return v; } }catch(e){}
