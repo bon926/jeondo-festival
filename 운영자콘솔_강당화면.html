@@ -525,6 +525,12 @@
       <button class="btn" id="qReveal">정답 공개 <span style="opacity:.7">(Space)</span></button>
       <button class="btn ghost sm" id="qNext">다음 ›</button>
     </div>
+    <div class="row" style="margin-top:10px;justify-content:center;gap:8px">
+      <span style="font-size:13px;color:#8a7150;font-weight:800;align-self:center">바로가기 —</span>
+      <button class="btn ghost sm" id="qJumpEasy" style="border-color:#bcd9a8;color:var(--leaf)">🟢 쉬움</button>
+      <button class="btn ghost sm" id="qJumpMid" style="border-color:#f0d79a;color:#b8860b">🟡 중간</button>
+      <button class="btn ghost sm" id="qJumpHard" style="border-color:#e8b4b4;color:#c0392b">🔴 어려움</button>
+    </div>
   </section>
 
 </main>
@@ -1143,6 +1149,10 @@ function renderQuiz(){
 document.getElementById('qReveal').onclick=()=>{ qRevealed=!qRevealed; renderQuiz(); };
 document.getElementById('qPrev').onclick=()=>{ if(qi>0){qi--;qRevealed=false;renderQuiz();} };
 document.getElementById('qNext').onclick=()=>{ if(qi<QUIZ.length-1){qi++;qRevealed=false;renderQuiz();} else toast('마지막 문제예요'); };
+function qJump(lv){ const i=QUIZ.findIndex(x=>x.lv===lv); if(i<0){toast(lv+' 문제가 없어요');return;} qi=i; qRevealed=false; renderQuiz(); toast(lv+' 문제로 이동 ('+(i+1)+'/'+QUIZ.length+')'); }
+document.getElementById('qJumpEasy').onclick=()=>qJump('쉬움');
+document.getElementById('qJumpMid').onclick=()=>qJump('중간');
+document.getElementById('qJumpHard').onclick=()=>qJump('어려움');
 
 /* =================== 실시간 답안 보드 (모든 게임 공용) =================== */
 const BOARD={ game:null, idx:0, open:false, ref:null, answers:{}, revealed:false, marks:{}, given:{}, pts:50 };
